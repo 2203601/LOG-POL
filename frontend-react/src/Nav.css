@@ -1,8 +1,26 @@
 .nav-area {
+  position: relative; /* 👈 necesario */
   display: flex;
   align-items: center;
-  gap: 8px;
+  width: 100%;
 }
+
+/* CENTRO */
+.nav-left {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%); /* 👈 centrado real */
+  display: flex;
+}
+
+/* DERECHA */
+.nav-right {
+  margin-left: auto; /* 👈 empuja a la derecha */
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+/* --- TU CSS ORIGINAL --- */
 
 .nav-links {
   display: flex;
@@ -25,6 +43,7 @@
   white-space: nowrap;
 }
 .nav-lnk:hover { background: var(--g50); color: var(--bd); }
+
 .nav-lnk.active {
   background: var(--bp);
   color: var(--bm);
@@ -62,4 +81,9 @@
   transition: all .12s;
   white-space: nowrap;
 }
-.btn-logout:hover { background: #FFF0F0; border-color: var(--re); color: var(--re); }
+
+.btn-logout:hover {
+  background: #FFF0F0;
+  border-color: var(--re);
+  color: var(--re);
+}

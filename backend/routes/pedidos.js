@@ -1,8 +1,16 @@
 const express = require('express')
 const Pedido   = require('../models/Pedido')
 const Producto = require('../models/Producto')
+const Vehiculo = require('../models/Vehiculo')
 
 const router = express.Router()
+
+async function cargaActual(vehiculo_id, excluirPedidoId = null) {
+  const query = { vehiculo_id, estado: 'En ruta' }
+  if (excluirPedidoId) query._id = { $ne: excluirPedidoId }
+  const pedidos = await Pedido.find(query).select('peso_total_kg').lean()
+  return pedidos.reduce((acc, p) => acc + (p.peso_total_kg || 0), 0)
+}
 
 // GET /api/pedidos
 router.get('/', async (req, res) => {
@@ -47,6 +55,17 @@ router.get('/stats', async (req, res) => {
 router.post('/', async (req, res) => {
   const { cliente_nombre, destino, fecha_entrega_estimada, prioridad, vehiculo_id, peso_total_kg, productos } = req.body
   try {
+    if (vehiculo_id) {
+      const vehiculo = await Vehiculo.findById(vehiculo_id).lean()
+      if (vehiculo && vehiculo.capacidad_kg) {
+        const carga = await cargaActual(vehiculo_id)
+        if (carga + (peso_total_kg || 0) > vehiculo.capacidad_kg) {
+          return res.status(400).json({
+            mensaje: `El vehículo ${vehiculo.patente} no tiene capacidad suficiente (${carga} kg usados de ${vehiculo.capacidad_kg} kg).`
+          })
+        }
+      }
+    }
     const estado = vehiculo_id ? 'En ruta' : 'Pendiente'
     const pedido = await Pedido.create({
       cliente_nombre, destino, fecha_entrega_estimada, prioridad,
@@ -69,12 +88,24 @@ router.post('/', async (req, res) => {
 router.put('/:id/asignar', async (req, res) => {
   const { vehiculo_id } = req.body
   try {
+    const pedidoActual = await Pedido.findById(req.params.id).lean()
+    if (!pedidoActual) return res.status(404).json({ mensaje: 'Pedido no encontrado' })
+
+    const vehiculo = await Vehiculo.findById(vehiculo_id).lean()
+    if (vehiculo && vehiculo.capacidad_kg) {
+      const carga = await cargaActual(vehiculo_id, req.params.id)
+      if (carga + (pedidoActual.peso_total_kg || 0) > vehiculo.capacidad_kg) {
+        return res.status(400).json({
+          mensaje: `El vehículo ${vehiculo.patente} no tiene capacidad suficiente (${carga} kg usados de ${vehiculo.capacidad_kg} kg).`
+        })
+      }
+    }
+
     const pedido = await Pedido.findByIdAndUpdate(
       req.params.id,
       { vehiculo_id, estado: 'En ruta' },
       { new: true }
     ).populate('vehiculo_id', 'patente capacidad_kg conductor_asignado')
-    if (!pedido) return res.status(404).json({ mensaje: 'Pedido no encontrado' })
     res.json(pedido)
   } catch {
     res.status(500).json({ mensaje: 'Error al asignar vehículo' })

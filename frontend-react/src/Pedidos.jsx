@@ -36,6 +36,7 @@ export default function Pedidos() {
   const [errorNuevo, setErrorNuevo]   = useState('')
 
   const [asignarTarget, setAsignarTarget] = useState({ pedido: null, vehiculoId: '', capPct: 0 })
+  const [errorAsignar, setErrorAsignar]   = useState('')
   const [detalle, setDetalle]         = useState(null)
 
   useEffect(() => {
@@ -95,16 +96,16 @@ export default function Pedidos() {
 
   async function submitAsignar() {
     if (!asignarTarget.vehiculoId) return
+    setErrorAsignar('')
     const res = await fetch(`${API}/${asignarTarget.pedido._id}/asignar`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ vehiculo_id: asignarTarget.vehiculoId })
     })
-    if (res.ok) {
-      setModalAsignar(false)
-      fetchPedidos()
-      fetchStats()
-    }
+    if (!res.ok) { const d = await res.json(); setErrorAsignar(d.mensaje); return }
+    setModalAsignar(false)
+    fetchPedidos()
+    fetchStats()
   }
 
   function openAsignar(p) {

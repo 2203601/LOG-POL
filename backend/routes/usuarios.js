@@ -1,0 +1,144 @@
+const express = require('express')
+const bcrypt = require('bcryptjs')
+const Usuario = require('../models/Usuario')
+const Conductor = require('../models/Conductor')
+
+const router = express.Router()
+
+// GET /api/usuarios
+router.get('/', async (req, res) => {
+  try {
+    const usuarios = await Usuario.find().sort({ createdAt: -1 }).lean()
+
+    const conductores = await Conductor.find().lean()
+    const conductorMap = {}
+    conductores.forEach(c => { conductorMap[c.usuario_id.toString()] = c })
+
+    const data = usuarios.map(u => ({
+      ...u,
+      conductor: conductorMap[u._id.toString()] || null
+    }))
+
+    res.json(data)
+  } catch {
+    res.status(500).json({ mensaje: 'Error al obtener usuarios' })
+  }
+})
+
+// GET /api/usuarios/stats
+router.get('/stats', async (req, res) => {
+  try {
+    const [total, activos, choferes, inactivos] = await Promise.all([
+      Usuario.countDocuments(),
+      Usuario.countDocuments({ activo: true }),
+      Usuario.countDocuments({ tipo_usuario: 'Chofer' }),
+      Usuario.countDocuments({ activo: false })
+    ])
+    res.json({ total, activos, choferes, inactivos })
+  } catch {
+    res.status(500).json({ mensaje: 'Error al obtener estadísticas' })
+  }
+})
+
+// POST /api/usuarios
+router.post('/', async (req, res) => {
+  const { nombre, apellido, email, password, tipo_usuario } = req.body
+
+  if (!nombre || !apellido || !email || !password || !tipo_usuario) {
+    return res.status(400).json({ mensaje: 'Todos los campos son requeridos' })
+  }
+
+  try {
+    const existe = await Usuario.findOne({ email })
+    if (existe) return res.status(409).json({ mensaje: 'El email ya está registrado' })
+
+    const hash = await bcrypt.hash(password, 10)
+    const usuario = await Usuario.create({
+      nombre,
+      apellido,
+      email,
+      contrasena: hash,
+      tipo_usuario,
+      requiere_cambio_contrasena: true,
+      activo: true
+    })
+
+    if (tipo_usuario === 'Chofer') {
+      await Conductor.create({
+        usuario_id: usuario._id,
+        nombre,
+        apellido
+      })
+    }
+
+    res.status(201).json(usuario)
+  } catch (err) {
+    res.status(500).json({ mensaje: 'Error al crear usuario' })
+  }
+})
+
+// POST /api/usuarios/:id/cambiar-password  (el propio usuario cambia su contraseña)
+router.post('/:id/cambiar-password', async (req, res) => {
+  const { nuevaPassword } = req.body
+  if (!nuevaPassword || nuevaPassword.length < 6) {
+    return res.status(400).json({ mensaje: 'La contraseña debe tener al menos 6 caracteres' })
+  }
+  try {
+    const hash = await bcrypt.hash(nuevaPassword, 10)
+    const usuario = await Usuario.findByIdAndUpdate(
+      req.params.id,
+      { contrasena: hash, requiere_cambio_contrasena: false },
+      { new: true }
+    )
+    if (!usuario) return res.status(404).json({ mensaje: 'Usuario no encontrado' })
+    res.json({ mensaje: 'Contraseña actualizada' })
+  } catch {
+    res.status(500).json({ mensaje: 'Error al cambiar contraseña' })
+  }
+})
+
+// PUT /api/usuarios/:id
+router.put('/:id', async (req, res) => {
+  const { nombre, apellido, email, tipo_usuario, activo, nuevaPassword } = req.body
+
+  try {
+    const update = { nombre, apellido, email, tipo_usuario, activo }
+
+    if (nuevaPassword) {
+      update.contrasena = await bcrypt.hash(nuevaPassword, 10)
+      update.requiere_cambio_contrasena = true  // admin reset → vuelve a pedir cambio
+    }
+
+    const usuario = await Usuario.findByIdAndUpdate(req.params.id, update, { new: true })
+    if (!usuario) return res.status(404).json({ mensaje: 'Usuario no encontrado' })
+
+    if (tipo_usuario === 'Chofer') {
+      await Conductor.findOneAndUpdate(
+        { usuario_id: req.params.id },
+        { nombre, apellido },
+        { upsert: true }
+      )
+    }
+
+    res.json(usuario)
+  } catch {
+    res.status(500).json({ mensaje: 'Error al actualizar usuario' })
+  }
+})
+
+// DELETE /api/usuarios/:id  (baja lógica)
+router.delete('/:id', async (req, res) => {
+  try {
+    const usuario = await Usuario.findByIdAndUpdate(
+      req.params.id,
+      { activo: false },
+      { new: true }
+    )
+    if (!usuario) return res.status(404).json({ mensaje: 'Usuario no encontrado' })
+    res.json({ mensaje: 'Usuario desactivado', usuario })
+  } catch {
+    res.status(500).json({ mensaje: 'Error al desactivar usuario' })
+  }
+})
+
+module.exports = router

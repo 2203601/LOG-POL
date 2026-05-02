@@ -1,0 +1,779 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Log-Pol · Gestión de Pedidos</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet"/>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bd:#1A3F6F; --bm:#2563A8; --bs:#D6E8F7; --bp:#EEF5FB;
+      --am:#E8A217; --as:#FEF3D7; --ad:#B87D0E;
+      --w:#fff; --g50:#F8F9FA; --g200:#E2E8F0; --g400:#94A3B8; --g700:#334155;
+      --tx:#1E293B; --ff:'DM Sans',system-ui,sans-serif;
+      --gr:#2A7A4E; --re:#B03040;
+    }
+    html, body { min-height:100vh; font-family:var(--ff); background:var(--g50); color:var(--tx); }
+
+    /* ── HEADER ── */
+    .header {
+      background:var(--w); border-bottom:1px solid var(--g200);
+      padding:16px 24px; display:flex; align-items:center; justify-content:space-between;
+    }
+    .brand { display:flex; align-items:center; gap:12px; }
+    .brand-icon {
+      width:48px; height:48px; background:var(--am); border-radius:12px;
+      display:flex; align-items:center; justify-content:center; position:relative; flex-shrink:0;
+    }
+    .online-dot {
+      width:11px; height:11px; background:#22c55e; border-radius:50%;
+      border:2px solid #fff; position:absolute; bottom:-2px; right:-2px;
+    }
+    .brand-name { font-size:17px; font-weight:700; color:var(--tx); line-height:1.2; }
+    .brand-sub  { font-size:12px; color:var(--g400); }
+    .user-pill {
+      display:flex; align-items:center; gap:8px; padding:8px 16px;
+      border:1px solid var(--g200); border-radius:20px; font-size:13px; color:var(--g700);
+      background:var(--w); cursor:pointer;
+    }
+
+    /* ── LAYOUT ── */
+    .body-wrap { display:flex; min-height:calc(100vh - 81px); }
+
+    /* ── LEFT MAIN ── */
+    .left-main { flex:1; padding:20px 24px; display:flex; flex-direction:column; gap:16px; overflow:auto; }
+
+    /* ── ALERT ── */
+    .alert-bar {
+      background:var(--as); border:1px solid #F0C770; border-radius:10px;
+      padding:12px 16px; font-size:13px; color:var(--ad);
+      display:flex; align-items:center; gap:10px;
+    }
+
+    /* ── PAGE HEADER ── */
+    .page-hd { display:flex; align-items:flex-start; justify-content:space-between; gap:12px; }
+    .page-ttl { font-size:26px; font-weight:700; color:var(--tx); }
+    .page-sub { font-size:13px; color:var(--g400); margin-top:3px; }
+    .btn-new {
+      display:flex; align-items:center; gap:7px;
+      padding:11px 20px; border-radius:10px; border:none;
+      background:var(--am); color:var(--bd); font-size:14px; font-weight:700;
+      font-family:var(--ff); cursor:pointer; transition:all .15s; white-space:nowrap;
+    }
+    .btn-new:hover { background:var(--ad); color:#fff; }
+
+    /* ── FILTERS ── */
+    .filter-row { display:flex; gap:10px; align-items:center; }
+    .srch-wrap {
+      display:flex; align-items:center; gap:8px;
+      padding:9px 14px; border:1px solid var(--g200); border-radius:10px;
+      background:var(--w); width:260px;
+    }
+    .srch-wrap input {
+      border:none; outline:none; font-size:13px; font-family:var(--ff);
+      color:var(--tx); background:transparent; width:100%;
+    }
+    .srch-wrap input::placeholder { color:var(--g400); }
+    .sel-wrap {
+      display:flex; align-items:center; gap:6px;
+      padding:9px 14px; border:1px solid var(--g200); border-radius:10px;
+      background:var(--w); font-size:13px; color:var(--tx); cursor:pointer;
+    }
+    .sel-wrap select {
+      border:none; outline:none; font-size:13px; font-family:var(--ff);
+      color:var(--tx); background:transparent; cursor:pointer; appearance:none; -webkit-appearance:none;
+    }
+
+    /* ── TABLE ── */
+    .tbl-wrap { background:var(--w); border:1px solid var(--g200); border-radius:12px; overflow:hidden; }
+    table { width:100%; border-collapse:collapse; font-size:13px; }
+    thead { background:var(--g50); }
+    th {
+      padding:10px 16px; text-align:left; font-size:11px; font-weight:600;
+      color:var(--g400); letter-spacing:.05em; text-transform:uppercase;
+    }
+    td { padding:14px 16px; border-top:1px solid var(--g200); color:var(--tx); vertical-align:middle; }
+    tr:hover td { background:#FAFBFE; }
+    .td-num { font-size:15px; font-weight:700; color:var(--bd); }
+
+    /* ── PILLS ── */
+    .pill { display:inline-flex; align-items:center; gap:5px; padding:5px 12px; border-radius:20px; font-size:12px; font-weight:500; }
+    .p-pend { background:var(--bs); color:var(--bm); }
+    .p-ruta { background:var(--as); color:var(--ad); }
+    .p-entg { background:#D1F0E1; color:#1C6B3A; }
+    .pdot { width:6px; height:6px; border-radius:50%; background:currentColor; flex-shrink:0; }
+
+    /* ── CAP BAR ── */
+    .camion-cell { display:flex; flex-direction:column; gap:4px; }
+    .camion-pat { font-size:13px; font-weight:500; color:var(--tx); }
+    .cap-bar { width:80px; height:4px; background:var(--g200); border-radius:3px; overflow:hidden; }
+    .cap-fill { height:100%; border-radius:3px; }
+    .cf-ok  { background:var(--bm); }
+    .cf-war { background:var(--am); }
+    .cf-dan { background:var(--re); }
+    .no-asig { font-size:12px; color:var(--g400); }
+
+    /* ── ACTIONS ── */
+    .acts { display:flex; gap:6px; align-items:center; }
+    .btn-asig {
+      padding:7px 16px; border-radius:8px; border:none;
+      background:var(--am); color:var(--bd); font-size:12px; font-weight:700;
+      font-family:var(--ff); cursor:pointer; transition:all .12s;
+    }
+    .btn-asig:hover { background:var(--ad); color:#fff; }
+    .btn-eye {
+      width:34px; height:34px; border-radius:8px; border:1px solid var(--g200);
+      background:var(--w); display:flex; align-items:center; justify-content:center;
+      cursor:pointer; color:var(--g400); transition:all .12s;
+    }
+    .btn-eye:hover { background:var(--bp); border-color:var(--bm); color:var(--bm); }
+
+    /* ── RIGHT PANEL ── */
+    .right-panel {
+      width:320px; flex-shrink:0; background:var(--bd);
+      display:flex; flex-direction:column; padding:24px 20px; gap:16px;
+    }
+    .rp-pill {
+      display:inline-flex; align-items:center; gap:7px;
+      background:rgba(255,255,255,.12); border-radius:20px;
+      padding:6px 14px; font-size:12px; color:rgba(255,255,255,.85); align-self:flex-start;
+    }
+    .rp-sdot { width:8px; height:8px; background:#22c55e; border-radius:50%; flex-shrink:0; }
+    .rp-title { font-size:22px; font-weight:700; color:#fff; }
+    .rp-sub   { font-size:13px; color:rgba(255,255,255,.55); margin-top:3px; }
+    .stat-grid { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+    .stat-card { background:rgba(255,255,255,.08); border-radius:10px; padding:14px; }
+    .sc-icon  { margin-bottom:8px; }
+    .sc-lbl   { font-size:11px; color:rgba(255,255,255,.5); margin-bottom:2px; }
+    .sc-val   { font-size:24px; font-weight:700; color:#fff; }
+    .sc-tag   { font-size:10px; color:rgba(255,255,255,.4); margin-top:2px; }
+    .rp-sep   { height:1px; background:rgba(255,255,255,.1); }
+    .rp-lbl   { font-size:10px; font-weight:600; color:rgba(255,255,255,.4); text-transform:uppercase; letter-spacing:.07em; }
+    .filter-btn {
+      display:flex; align-items:center; justify-content:space-between;
+      background:rgba(255,255,255,.08); border-radius:8px; padding:10px 14px;
+      cursor:pointer; transition:background .12s; border:none; width:100%; font-family:var(--ff);
+    }
+    .filter-btn:hover { background:rgba(255,255,255,.14); }
+    .filter-btn-left { display:flex; align-items:center; gap:8px; font-size:13px; color:#fff; }
+    .fbdot { width:8px; height:8px; border-radius:50%; flex-shrink:0; }
+    .fb-badge {
+      background:var(--am); color:var(--bd); font-size:11px; font-weight:700;
+      padding:2px 8px; border-radius:20px;
+    }
+    .sys-lbl { font-size:10px; font-weight:600; color:rgba(255,255,255,.4); text-transform:uppercase; letter-spacing:.07em; }
+    .sys-row {
+      display:flex; align-items:center; justify-content:space-between;
+      background:rgba(255,255,255,.06); border-radius:8px; padding:9px 12px; font-size:12px;
+    }
+    .sys-k { color:rgba(255,255,255,.6); }
+    .sys-v { color:#fff; font-weight:500; display:flex; align-items:center; gap:5px; }
+    .sys-dot { width:7px; height:7px; background:#22c55e; border-radius:50%; }
+    .help-btn {
+      width:36px; height:36px; background:rgba(255,255,255,.15); border-radius:50%;
+      border:none; color:#fff; font-size:15px; cursor:pointer;
+      display:flex; align-items:center; justify-content:center; align-self:flex-end;
+      font-family:var(--ff); margin-top:auto;
+    }
+
+    /* ── MODAL ── */
+    .overlay {
+      display:none; position:fixed; inset:0; background:rgba(0,0,0,.4);
+      z-index:200; align-items:center; justify-content:center;
+    }
+    .overlay.show { display:flex; }
+    .modal {
+      background:var(--w); border-radius:14px; width:540px;
+      box-shadow:0 16px 50px rgba(0,0,0,.2); overflow:hidden;
+    }
+    .modal-head {
+      background:var(--bd); padding:16px 20px;
+      display:flex; align-items:center; justify-content:space-between;
+    }
+    .modal-ttl { font-size:14px; font-weight:600; color:#fff; }
+    .modal-close {
+      background:rgba(255,255,255,.15); border:none; color:#fff;
+      width:28px; height:28px; border-radius:50%; cursor:pointer;
+      font-size:14px; display:flex; align-items:center; justify-content:center; font-family:var(--ff);
+    }
+    .modal-body { padding:20px; display:flex; flex-direction:column; gap:14px; }
+    .m-grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+    .flbl { font-size:11px; font-weight:600; color:var(--g700); display:block; margin-bottom:5px; }
+    .finput {
+      width:100%; padding:9px 12px; border:1px solid var(--g200); border-radius:8px;
+      font-size:13px; font-family:var(--ff); background:var(--w); color:var(--tx); outline:none;
+    }
+    .finput:focus { border-color:var(--bm); }
+    select.finput { appearance:none; -webkit-appearance:none; }
+    .m-sep { height:1px; background:var(--g200); }
+    .m-sub { font-size:13px; font-weight:600; color:var(--bd); display:flex; align-items:center; gap:6px; }
+    .prod-row { display:flex; gap:8px; align-items:center; }
+    .prod-row .finput.flex1 { flex:1; }
+    .prod-row .finput.w80  { width:80px; flex:none; }
+    .prod-row .finput.w70  { width:70px; flex:none; }
+    .btn-del {
+      width:28px; height:28px; border-radius:6px; border:1px solid var(--g200);
+      background:var(--w); color:var(--g400); font-size:13px; cursor:pointer;
+      display:flex; align-items:center; justify-content:center; flex-shrink:0;
+    }
+    .btn-del:hover { background:#FFF0F0; border-color:var(--re); color:var(--re); }
+    .btn-add-prod {
+      width:100%; padding:8px; border:1.5px dashed var(--g200); border-radius:8px;
+      background:transparent; color:var(--g400); font-size:12px; font-family:var(--ff);
+      cursor:pointer; transition:all .12s;
+    }
+    .btn-add-prod:hover { border-color:var(--bm); color:var(--bm); background:var(--bp); }
+    .modal-foot {
+      padding:14px 20px; border-top:1px solid var(--g200);
+      display:flex; justify-content:flex-end; gap:8px; align-items:center;
+    }
+    .peso-sum { flex:1; font-size:12px; color:var(--g400); }
+    .peso-sum strong { color:var(--bd); }
+    .btnc {
+      padding:8px 16px; border-radius:8px; border:1px solid var(--g200);
+      background:var(--w); color:var(--g700); font-size:13px; font-family:var(--ff); cursor:pointer;
+    }
+    .btnc:hover { background:var(--g50); }
+    .btnok {
+      padding:8px 18px; border-radius:8px; border:none;
+      background:var(--am); color:var(--bd); font-size:13px; font-weight:700;
+      font-family:var(--ff); cursor:pointer; transition:all .12s;
+    }
+    .btnok:hover { background:var(--ad); color:#fff; }
+
+    /* modal asignar */
+    .modal.sm { width:420px; }
+    .cap-preview { margin-top:4px; }
+    .cap-bar-lg { width:100%; height:7px; background:var(--g200); border-radius:4px; overflow:hidden; margin-bottom:5px; }
+    .cap-fill-lg { height:100%; border-radius:4px; transition:width .3s; }
+  </style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="header">
+  <div class="brand">
+    <div class="brand-icon">
+      <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
+        <rect x="2" y="14" width="22" height="10" rx="3" fill="white"/>
+        <circle cx="7"  cy="24" r="3.5" fill="white"/>
+        <circle cx="21" cy="24" r="3.5" fill="white"/>
+        <rect x="2" y="5" width="13" height="10" rx="2" fill="rgba(255,255,255,.8)"/>
+      </svg>
+      <div class="online-dot"></div>
+    </div>
+    <div>
+      <div class="brand-name">Log-Pol</div>
+      <div class="brand-sub">Gestión de Pedidos</div>
+    </div>
+  </div>
+  <div class="user-pill">
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+      <circle cx="8" cy="5.5" r="3" stroke="#94A3B8" stroke-width="1.4"/>
+      <path d="M2 13.5 C2 11 4.7 9 8 9 C11.3 9 14 11 14 13.5" stroke="#94A3B8" stroke-width="1.4" stroke-linecap="round"/>
+    </svg>
+    Encargado
+  </div>
+</div>
+
+<!-- BODY -->
+<div class="body-wrap">
+
+  <!-- LEFT -->
+  <div class="left-main">
+
+    <!-- ALERT -->
+    <div class="alert-bar">
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+        <path d="M8 1.5 L14.5 13.5 H1.5 Z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round" fill="none"/>
+        <line x1="8" y1="6" x2="8" y2="10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+        <circle cx="8" cy="12" r="0.8" fill="currentColor"/>
+      </svg>
+      <span><strong>Pedido #1045</strong> aún sin camión asignado · Distribuidor Sur está esperando</span>
+    </div>
+
+    <!-- PAGE HEADER -->
+    <div class="page-hd">
+      <div>
+        <div class="page-ttl">Gestión de pedidos</div>
+        <div class="page-sub">Registro, asignación y control de carga · Abril 2026</div>
+      </div>
+      <button class="btn-new" onclick="openModalNuevo()">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+          <path d="M8 2 L8 14 M2 8 L14 8" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+        </svg>
+        Nuevo pedido
+      </button>
+    </div>
+
+    <!-- FILTERS -->
+    <div class="filter-row">
+      <div class="srch-wrap">
+        <svg width="15" height="15" viewBox="0 0 15 15" fill="none">
+          <circle cx="6.5" cy="6.5" r="4.5" stroke="#94A3B8" stroke-width="1.4"/>
+          <path d="M10 10 L13.5 13.5" stroke="#94A3B8" stroke-width="1.4" stroke-linecap="round"/>
+        </svg>
+        <input id="searchInput" placeholder="Buscar pedido o cliente..." oninput="filterTable()"/>
+      </div>
+      <div class="sel-wrap">
+        <select id="statusFilter" onchange="filterTable()">
+          <option value="">Todos los estados</option>
+          <option>Pendiente</option>
+          <option>En ruta</option>
+          <option>Entregado</option>
+        </select>
+        <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+          <path d="M2 4 L6 8 L10 4" stroke="#94A3B8" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </div>
+    </div>
+
+    <!-- TABLE -->
+    <div class="tbl-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th style="width:70px">#</th>
+            <th style="width:140px">Cliente</th>
+            <th style="width:120px">Destino</th>
+            <th style="width:90px">Peso</th>
+            <th style="width:130px">Camión</th>
+            <th style="width:110px">Estado</th>
+            <th style="width:110px">Fecha</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody id="tableBody">
+
+          <tr data-status="Pendiente">
+            <td><span class="td-num">#1045</span></td>
+            <td>Distribuidora Sur</td>
+            <td>Villa María</td>
+            <td>3.200 kg</td>
+            <td><span class="no-asig">— Sin asignar</span></td>
+            <td><span class="pill p-pend"><span class="pdot"></span>Pendiente</span></td>
+            <td style="font-size:12px;color:var(--g400)">20/04/2026</td>
+            <td><div class="acts">
+              <button class="btn-asig" onclick="openModalAsignar('1045','Distribuidora Sur')">Asignar</button>
+              <button class="btn-eye" title="Ver detalle" onclick="openDetalle('1045','Distribuidora Sur','Villa María','3.200 kg','Pendiente')">
+                <svg width="15" height="15" viewBox="0 0 15 15" fill="none"><ellipse cx="7.5" cy="7.5" rx="6" ry="4" stroke="currentColor" stroke-width="1.4"/><circle cx="7.5" cy="7.5" r="2" stroke="currentColor" stroke-width="1.4"/></svg>
+              </button>
+            </div></td>
+          </tr>
+
+          <tr data-status="En ruta">
+            <td><span class="td-num">#1044</span></td>
+            <td>Mercado Norte</td>
+            <td>Río Cuarto</td>
+            <td>5.800 kg</td>
+            <td>
+              <div class="camion-cell">
+                <span class="camion-pat">ABC-123</span>
+                <div class="cap-bar"><div class="cap-fill cf-war" style="width:78%"></div></div>
+              </div>
+            </td>
+            <td><span class="pill p-ruta"><span class="pdot"></span>En ruta</span></td>
+            <td style="font-size:12px;color:var(--g400)">20/04/2026</td>
+            <td><div class="acts">
+              <button class="btn-eye" title="Ver detalle" onclick="openDetalle('1044','Mercado Norte','Río Cuarto','5.800 kg','En ruta')">
+                <svg width="15" height="15" viewBox="0 0 15 15" fill="none"><ellipse cx="7.5" cy="7.5" rx="6" ry="4" stroke="currentColor" stroke-width="1.4"/><circle cx="7.5" cy="7.5" r="2" stroke="currentColor" stroke-width="1.4"/></svg>
+              </button>
+            </div></td>
+          </tr>
+
+          <tr data-status="Pendiente">
+            <td><span class="td-num">#1043</span></td>
+            <td>Almacén Central</td>
+            <td>Alta Gracia</td>
+            <td>1.900 kg</td>
+            <td><span class="no-asig">— Sin asignar</span></td>
+            <td><span class="pill p-pend"><span class="pdot"></span>Pendiente</span></td>
+            <td style="font-size:12px;color:var(--g400)">19/04/2026</td>
+            <td><div class="acts">
+              <button class="btn-asig" onclick="openModalAsignar('1043','Almacén Central')">Asignar</button>
+              <button class="btn-eye" title="Ver detalle" onclick="openDetalle('1043','Almacén Central','Alta Gracia','1.900 kg','Pendiente')">
+                <svg width="15" height="15" viewBox="0 0 15 15" fill="none"><ellipse cx="7.5" cy="7.5" rx="6" ry="4" stroke="currentColor" stroke-width="1.4"/><circle cx="7.5" cy="7.5" r="2" stroke="currentColor" stroke-width="1.4"/></svg>
+              </button>
+            </div></td>
+          </tr>
+
+          <tr data-status="En ruta">
+            <td><span class="td-num">#1042</span></td>
+            <td>LogiPro S.A.</td>
+            <td>San Francisco</td>
+            <td>7.100 kg</td>
+            <td>
+              <div class="camion-cell">
+                <span class="camion-pat">GHI-789</span>
+                <div class="cap-bar"><div class="cap-fill cf-dan" style="width:95%"></div></div>
+              </div>
+            </td>
+            <td><span class="pill p-ruta"><span class="pdot"></span>En ruta</span></td>
+            <td style="font-size:12px;color:var(--g400)">19/04/2026</td>
+            <td><div class="acts">
+              <button class="btn-eye" title="Ver detalle" onclick="openDetalle('1042','LogiPro S.A.','San Francisco','7.100 kg','En ruta')">
+                <svg width="15" height="15" viewBox="0 0 15 15" fill="none"><ellipse cx="7.5" cy="7.5" rx="6" ry="4" stroke="currentColor" stroke-width="1.4"/><circle cx="7.5" cy="7.5" r="2" stroke="currentColor" stroke-width="1.4"/></svg>
+              </button>
+            </div></td>
+          </tr>
+
+          <tr data-status="Entregado">
+            <td><span class="td-num">#1041</span></td>
+            <td>Carnes del Sur</td>
+            <td>Córdoba Centro</td>
+            <td>4.400 kg</td>
+            <td><span class="camion-pat">ABC-123</span></td>
+            <td><span class="pill p-entg"><span class="pdot"></span>Entregado</span></td>
+            <td style="font-size:12px;color:var(--g400)">18/04/2026</td>
+            <td><div class="acts">
+              <button class="btn-eye" title="Ver detalle" onclick="openDetalle('1041','Carnes del Sur','Córdoba Centro','4.400 kg','Entregado')">
+                <svg width="15" height="15" viewBox="0 0 15 15" fill="none"><ellipse cx="7.5" cy="7.5" rx="6" ry="4" stroke="currentColor" stroke-width="1.4"/><circle cx="7.5" cy="7.5" r="2" stroke="currentColor" stroke-width="1.4"/></svg>
+              </button>
+            </div></td>
+          </tr>
+
+          <tr data-status="Entregado">
+            <td><span class="td-num">#1039</span></td>
+            <td>Dist. Pampeana</td>
+            <td>Villa María</td>
+            <td>2.600 kg</td>
+            <td><span class="camion-pat">GHI-789</span></td>
+            <td><span class="pill p-entg"><span class="pdot"></span>Entregado</span></td>
+            <td style="font-size:12px;color:var(--g400)">18/04/2026</td>
+            <td><div class="acts">
+              <button class="btn-eye" title="Ver detalle" onclick="openDetalle('1039','Dist. Pampeana','Villa María','2.600 kg','Entregado')">
+                <svg width="15" height="15" viewBox="0 0 15 15" fill="none"><ellipse cx="7.5" cy="7.5" rx="6" ry="4" stroke="currentColor" stroke-width="1.4"/><circle cx="7.5" cy="7.5" r="2" stroke="currentColor" stroke-width="1.4"/></svg>
+              </button>
+            </div></td>
+          </tr>
+
+          <tr data-status="Pendiente">
+            <td><span class="td-num">#1038</span></td>
+            <td>Frigorífico Norte</td>
+            <td>Jesús María</td>
+            <td>6.300 kg</td>
+            <td><span class="no-asig">— Sin asignar</span></td>
+            <td><span class="pill p-pend"><span class="pdot"></span>Pendiente</span></td>
+            <td style="font-size:12px;color:var(--g400)">17/04/2026</td>
+            <td><div class="acts">
+              <button class="btn-asig" onclick="openModalAsignar('1038','Frigorífico Norte')">Asignar</button>
+              <button class="btn-eye" title="Ver detalle" onclick="openDetalle('1038','Frigorífico Norte','Jesús María','6.300 kg','Pendiente')">
+                <svg width="15" height="15" viewBox="0 0 15 15" fill="none"><ellipse cx="7.5" cy="7.5" rx="6" ry="4" stroke="currentColor" stroke-width="1.4"/><circle cx="7.5" cy="7.5" r="2" stroke="currentColor" stroke-width="1.4"/></svg>
+              </button>
+            </div></td>
+          </tr>
+
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- RIGHT PANEL -->
+  <div class="right-panel">
+    <div class="rp-pill"><span class="rp-sdot"></span>Sistema en línea</div>
+
+    <div>
+      <div class="rp-title">Estadísticas</div>
+      <div class="rp-sub">Resumen de pedidos activos</div>
+    </div>
+
+    <div class="stat-grid">
+      <div class="stat-card">
+        <div class="sc-icon">
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+            <rect x="1" y="10" width="16" height="7" rx="2.5" fill="rgba(255,255,255,.5)"/>
+            <circle cx="5"  cy="17" r="2.5" fill="rgba(255,255,255,.7)"/>
+            <circle cx="14" cy="17" r="2.5" fill="rgba(255,255,255,.7)"/>
+            <rect x="1" y="4" width="10" height="7" rx="2" fill="rgba(255,255,255,.35)"/>
+          </svg>
+        </div>
+        <div class="sc-lbl">Total pedidos</div>
+        <div class="sc-val">28</div>
+        <div class="sc-tag">este mes</div>
+      </div>
+      <div class="stat-card">
+        <div class="sc-icon">
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+            <path d="M10 2 L18 17 H2 Z" stroke="rgba(255,255,255,.55)" stroke-width="1.6" stroke-linejoin="round" fill="none"/>
+            <line x1="10" y1="8" x2="10" y2="12" stroke="rgba(255,255,255,.55)" stroke-width="1.6" stroke-linecap="round"/>
+            <circle cx="10" cy="14.5" r="0.9" fill="rgba(255,255,255,.55)"/>
+          </svg>
+        </div>
+        <div class="sc-lbl">Pendientes</div>
+        <div class="sc-val">3</div>
+        <div class="sc-tag">sin asignar</div>
+      </div>
+      <div class="stat-card">
+        <div class="sc-icon">
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+            <circle cx="10" cy="8.5" r="4.5" stroke="rgba(255,255,255,.55)" stroke-width="1.6"/>
+            <path d="M10 13 L10 18" stroke="rgba(255,255,255,.55)" stroke-width="1.6" stroke-linecap="round"/>
+            <circle cx="10" cy="8.5" r="1.5" fill="rgba(255,255,255,.55)"/>
+          </svg>
+        </div>
+        <div class="sc-lbl">En ruta</div>
+        <div class="sc-val">2</div>
+        <div class="sc-tag">en tránsito</div>
+      </div>
+      <div class="stat-card">
+        <div class="sc-icon">
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+            <path d="M3 10 L8 15 L17 5" stroke="rgba(255,255,255,.55)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
+        <div class="sc-lbl">Entregados</div>
+        <div class="sc-val">23</div>
+        <div class="sc-tag">confirmados</div>
+      </div>
+    </div>
+
+    <div class="rp-sep"></div>
+
+    <div class="rp-lbl">Filtros rápidos</div>
+    <div style="display:flex;flex-direction:column;gap:6px">
+      <button class="filter-btn" onclick="applyFilter('Pendiente')">
+        <div class="filter-btn-left"><span class="fbdot" style="background:#60A5FA"></span>Pendientes</div>
+        <span class="fb-badge">3</span>
+      </button>
+      <button class="filter-btn" onclick="applyFilter('En ruta')">
+        <div class="filter-btn-left"><span class="fbdot" style="background:var(--am)"></span>En ruta</div>
+        <span class="fb-badge">2</span>
+      </button>
+      <button class="filter-btn" onclick="applyFilter('Entregado')">
+        <div class="filter-btn-left"><span class="fbdot" style="background:#4ADE80"></span>Entregados</div>
+        <span class="fb-badge">23</span>
+      </button>
+      <button class="filter-btn" onclick="applyFilter('')">
+        <div class="filter-btn-left"><span class="fbdot" style="background:rgba(255,255,255,.3)"></span>Todos</div>
+      </button>
+    </div>
+
+    <button class="help-btn">?</button>
+  </div>
+
+</div><!-- /body-wrap -->
+
+<!-- MODAL NUEVO PEDIDO -->
+<div class="overlay" id="modalNuevo">
+  <div class="modal">
+    <div class="modal-head">
+      <span class="modal-ttl">Nuevo pedido</span>
+      <button class="modal-close" onclick="closeModalNuevo()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="m-grid">
+        <div><label class="flbl">Cliente</label><input class="finput" type="text" placeholder="Nombre del cliente"/></div>
+        <div><label class="flbl">Destino</label><input class="finput" type="text" placeholder="Ciudad / dirección"/></div>
+        <div><label class="flbl">Fecha estimada de entrega</label><input class="finput" type="date"/></div>
+        <div>
+          <label class="flbl">Prioridad</label>
+          <select class="finput"><option>Normal</option><option>Alta</option><option>Urgente</option></select>
+        </div>
+      </div>
+      <div class="m-sep"></div>
+      <div class="m-sub">
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><rect x="1" y="1" width="12" height="12" rx="2" stroke="currentColor" stroke-width="1.4"/><path d="M4 7 L6 9 L10 5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        Productos
+      </div>
+      <div id="prodList" style="display:flex;flex-direction:column;gap:7px">
+        <div class="prod-row">
+          <input class="finput flex1" type="text" placeholder="Nombre del producto"/>
+          <input class="finput w80" type="number" placeholder="Peso (kg)" min="0" oninput="calcPeso()"/>
+          <input class="finput w70" type="number" placeholder="Cant." min="1"/>
+          <button class="btn-del" onclick="this.parentElement.remove();calcPeso()">✕</button>
+        </div>
+      </div>
+      <button class="btn-add-prod" onclick="addProd()">+ Agregar producto</button>
+      <div class="m-sep"></div>
+      <div class="m-sub">Asignar camión (opcional)</div>
+      <select class="finput">
+        <option value="">Seleccionar camión disponible...</option>
+        <option>ABC-123 · J. Ruiz · 10.000 kg · 10% ocupado</option>
+        <option>DEF-456 · M. López · 8.000 kg · 45% ocupado</option>
+        <option>GHI-789 · R. Pérez · 12.000 kg · 95% ocupado ⚠</option>
+      </select>
+    </div>
+    <div class="modal-foot">
+      <div class="peso-sum">Peso estimado: <strong id="totalPeso">0 kg</strong></div>
+      <button class="btnc" onclick="closeModalNuevo()">Cancelar</button>
+      <button class="btnok">Registrar pedido</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL ASIGNAR -->
+<div class="overlay" id="modalAsignar">
+  <div class="modal sm">
+    <div class="modal-head">
+      <span class="modal-ttl">Asignar camión · Pedido <span id="asigNum">#1045</span></span>
+      <button class="modal-close" onclick="closeModalAsignar()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="alert-bar" style="font-size:12px">
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 1 L13 12 H1 Z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round" fill="none"/><line x1="7" y1="5" x2="7" y2="8.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/><circle cx="7" cy="10.2" r="0.7" fill="currentColor"/></svg>
+        Cliente: <strong id="asigCliente">Distribuidora Sur</strong> · Pedido sin camión asignado
+      </div>
+      <div>
+        <label class="flbl">Seleccionar camión disponible</label>
+        <select class="finput" id="camionSel" onchange="updateCap()">
+          <option value="">— Elegir camión —</option>
+          <option value="10,10000,J. Ruiz">ABC-123 · J. Ruiz · 10.000 kg cap. · 10% ocupado</option>
+          <option value="45,8000,M. López">DEF-456 · M. López · 8.000 kg cap. · 45% ocupado</option>
+          <option value="95,12000,R. Pérez">GHI-789 · R. Pérez · 12.000 kg cap. · 95% ocupado ⚠</option>
+        </select>
+      </div>
+      <div id="capPreview" style="display:none" class="cap-preview">
+        <label class="flbl">Capacidad del camión seleccionado</label>
+        <div class="cap-bar-lg"><div class="cap-fill-lg" id="capFillLg" style="width:0%"></div></div>
+        <div style="font-size:12px;color:var(--g400)" id="capText">—</div>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btnc" onclick="closeModalAsignar()">Cancelar</button>
+      <button class="btnok" onclick="closeModalAsignar()">Confirmar asignación</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL DETALLE -->
+<div class="overlay" id="modalDetalle">
+  <div class="modal" style="width:500px">
+    <div class="modal-head">
+      <span class="modal-ttl">Detalle · Pedido <span id="detNum">#1044</span></span>
+      <button class="modal-close" onclick="closeDetalle()">✕</button>
+    </div>
+    <div class="modal-body" style="gap:10px">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+        <div style="background:var(--g50);border-radius:8px;padding:10px">
+          <div style="font-size:10px;color:var(--g400);text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px">Cliente</div>
+          <div style="font-size:14px;font-weight:600;color:var(--tx)" id="detCliente">—</div>
+        </div>
+        <div style="background:var(--g50);border-radius:8px;padding:10px">
+          <div style="font-size:10px;color:var(--g400);text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px">Destino</div>
+          <div style="font-size:14px;font-weight:600;color:var(--tx)" id="detDestino">—</div>
+        </div>
+        <div style="background:var(--g50);border-radius:8px;padding:10px">
+          <div style="font-size:10px;color:var(--g400);text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px">Peso total</div>
+          <div style="font-size:14px;font-weight:600;color:var(--bd)" id="detPeso">—</div>
+        </div>
+        <div style="background:var(--g50);border-radius:8px;padding:10px">
+          <div style="font-size:10px;color:var(--g400);text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px">Estado</div>
+          <div id="detEstado">—</div>
+        </div>
+      </div>
+      <div class="m-sep"></div>
+      <div style="font-size:12px;font-weight:600;color:var(--bd);margin-bottom:6px">Timeline de entrega</div>
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <div style="display:flex;gap:10px;align-items:flex-start">
+          <div style="width:8px;height:8px;border-radius:50%;background:var(--gr);flex-shrink:0;margin-top:3px"></div>
+          <div><div style="font-size:12px;font-weight:500;color:var(--tx)">Pedido registrado</div><div style="font-size:11px;color:var(--g400)">Hoy · 07:15 hs</div></div>
+        </div>
+        <div style="display:flex;gap:10px;align-items:flex-start" id="tlAsig">
+          <div style="width:8px;height:8px;border-radius:50%;background:var(--gr);flex-shrink:0;margin-top:3px"></div>
+          <div><div style="font-size:12px;font-weight:500;color:var(--tx)">Asignado a camión</div><div style="font-size:11px;color:var(--g400)">Hoy · 07:40 hs</div></div>
+        </div>
+        <div style="display:flex;gap:10px;align-items:flex-start" id="tlRuta">
+          <div style="width:8px;height:8px;border-radius:50%;background:var(--am);flex-shrink:0;margin-top:3px"></div>
+          <div><div style="font-size:12px;font-weight:500;color:var(--tx)">En tránsito</div><div style="font-size:11px;color:var(--g400)">Hoy · 08:30 hs</div></div>
+        </div>
+        <div style="display:flex;gap:10px;align-items:flex-start" id="tlEntg">
+          <div style="width:8px;height:8px;border-radius:50%;background:var(--g200);flex-shrink:0;margin-top:3px"></div>
+          <div><div style="font-size:12px;color:var(--g400)">Confirmación de entrega</div><div style="font-size:11px;color:var(--g400)">Pendiente</div></div>
+        </div>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btnc" onclick="closeDetalle()">Cerrar</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  function filterTable() {
+    const q = document.getElementById('searchInput').value.toLowerCase();
+    const s = document.getElementById('statusFilter').value;
+    document.querySelectorAll('#tableBody tr').forEach(tr => {
+      const matchQ = !q || tr.textContent.toLowerCase().includes(q);
+      const matchS = !s || tr.dataset.status === s;
+      tr.style.display = matchQ && matchS ? '' : 'none';
+    });
+  }
+
+  function applyFilter(s) {
+    document.getElementById('statusFilter').value = s;
+    filterTable();
+  }
+
+  // modal nuevo
+  function openModalNuevo()  { document.getElementById('modalNuevo').classList.add('show'); }
+  function closeModalNuevo() { document.getElementById('modalNuevo').classList.remove('show'); }
+
+  function addProd() {
+    const d = document.createElement('div');
+    d.className = 'prod-row';
+    d.innerHTML = `
+      <input class="finput flex1" type="text" placeholder="Nombre del producto"/>
+      <input class="finput w80" type="number" placeholder="Peso (kg)" min="0" oninput="calcPeso()"/>
+      <input class="finput w70" type="number" placeholder="Cant." min="1"/>
+      <button class="btn-del" onclick="this.parentElement.remove();calcPeso()">✕</button>`;
+    document.getElementById('prodList').appendChild(d);
+  }
+
+  function calcPeso() {
+    let t = 0;
+    document.querySelectorAll('#prodList .w80').forEach(i => t += parseFloat(i.value)||0);
+    document.getElementById('totalPeso').textContent = t.toLocaleString('es-AR') + ' kg';
+  }
+
+  // modal asignar
+  function openModalAsignar(num, cli) {
+    document.getElementById('asigNum').textContent = '#' + num;
+    document.getElementById('asigCliente').textContent = cli;
+    document.getElementById('camionSel').value = '';
+    document.getElementById('capPreview').style.display = 'none';
+    document.getElementById('modalAsignar').classList.add('show');
+  }
+  function closeModalAsignar() { document.getElementById('modalAsignar').classList.remove('show'); }
+
+  function updateCap() {
+    const v = document.getElementById('camionSel').value;
+    if (!v) { document.getElementById('capPreview').style.display = 'none'; return; }
+    const [pct] = v.split(',');
+    const p = parseInt(pct);
+    document.getElementById('capPreview').style.display = 'block';
+    const fill = document.getElementById('capFillLg');
+    fill.style.width = p + '%';
+    fill.style.background = p >= 90 ? 'var(--re)' : p >= 60 ? 'var(--am)' : 'var(--bm)';
+    document.getElementById('capText').textContent = p + '% de capacidad utilizada';
+  }
+
+  // modal detalle
+  function openDetalle(num, cli, dest, peso, estado) {
+    document.getElementById('detNum').textContent = '#' + num;
+    document.getElementById('detCliente').textContent = cli;
+    document.getElementById('detDestino').textContent = dest;
+    document.getElementById('detPeso').textContent = peso;
+    const pillMap = {
+      'Pendiente': '<span class="pill p-pend"><span class="pdot"></span>Pendiente</span>',
+      'En ruta':   '<span class="pill p-ruta"><span class="pdot"></span>En ruta</span>',
+      'Entregado': '<span class="pill p-entg"><span class="pdot"></span>Entregado</span>',
+    };
+    document.getElementById('detEstado').innerHTML = pillMap[estado] || estado;
+    document.getElementById('tlEntg').children[0].style.background = estado === 'Entregado' ? 'var(--gr)' : 'var(--g200)';
+    document.getElementById('tlEntg').children[1].children[0].style.color = estado === 'Entregado' ? 'var(--tx)' : '';
+    document.getElementById('modalDetalle').classList.add('show');
+  }
+  function closeDetalle() { document.getElementById('modalDetalle').classList.remove('show'); }
+
+  // click fuera cierra modales
+  ['modalNuevo','modalAsignar','modalDetalle'].forEach(id => {
+    document.getElementById(id).addEventListener('click', e => {
+      if (e.target === e.currentTarget) e.currentTarget.classList.remove('show');
+    });
+  });
+</script>
+</body>
+</html>

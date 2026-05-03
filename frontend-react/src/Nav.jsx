@@ -7,7 +7,7 @@ const LINKS = {
     { to: '/vehiculos', label: 'Vehículos' },
   ],
   'Recursos Humanos': [
-    { to: '/rrhh', label: 'RRHH' },
+    { to: '/rrhh', label: 'Crear Cuenta' },
   ],
   'Chofer': [],
 }

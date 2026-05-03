@@ -110,6 +110,7 @@ export default function Pedidos() {
 
   function openAsignar(p) {
     setAsignarTarget({ pedido: p, vehiculoId: '', capPct: 0 })
+    setErrorAsignar('')
     setModalAsignar(true)
   }
 
@@ -425,9 +426,10 @@ export default function Pedidos() {
               </div>
             )}
           </div>
+          {errorAsignar && <div style={{ padding: '0 20px 12px', fontSize: 13, color: 'var(--re)' }}>{errorAsignar}</div>}
           <div className="modal-foot">
             <button className="btnc" onClick={() => setModalAsignar(false)}>Cancelar</button>
-            <button className="btnok" onClick={submitAsignar} disabled={!asignarTarget.vehiculoId}>Confirmar asignación</button>
+            <button className="btnok" onClick={submitAsignar} disabled={!asignarTarget.vehiculoId || asignarPct > 100}>Confirmar asignación</button>
           </div>
         </div>
       </div>

@@ -1,0 +1,13 @@
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bd: #1A3F6F; --bm: #2563A8; --bs: #D6E8F7; --bp: #EEF5FB;
+  --am: #E8A217; --as: #FEF3D7; --ad: #B87D0E;
+  --w: #fff; --g50: #F8F9FA; --g200: #E2E8F0; --g400: #94A3B8; --g700: #334155;
+  --tx: #1E293B; --ff: 'DM Sans', system-ui, sans-serif;
+  --gr: #2A7A4E; --re: #B03040;
+}
+
+html, body { min-height: 100vh; font-family: var(--ff); background: var(--g50); color: var(--tx); }
+
+#root { width: 100%; min-height: 100vh; }

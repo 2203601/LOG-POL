@@ -2,8 +2,19 @@ const express = require('express')
 const bcrypt = require('bcryptjs')
 const Usuario = require('../models/Usuario')
 const Conductor = require('../models/Conductor')
+const { soloRol } = require('../middleware/auth')
 
 const router = express.Router()
+
+const TIPOS_VALIDOS = ['Encargado de logística', 'Recursos Humanos', 'Chofer']
+
+function validarPassword(p) {
+  if (!p || p.length < 8)           return 'La contraseña debe tener al menos 8 caracteres'
+  if (!/[A-Z]/.test(p))             return 'La contraseña debe contener al menos una mayúscula'
+  if (!/[0-9]/.test(p))             return 'La contraseña debe contener al menos un número'
+  if (!/[^A-Za-z0-9]/.test(p))      return 'La contraseña debe contener al menos un carácter especial'
+  return null
+}
 
 // GET /api/usuarios
 router.get('/', async (req, res) => {
@@ -40,19 +51,26 @@ router.get('/stats', async (req, res) => {
   }
 })
 
-// POST /api/usuarios
-router.post('/', async (req, res) => {
+// POST /api/usuarios  — solo RRHH puede crear usuarios
+router.post('/', soloRol('Recursos Humanos'), async (req, res) => {
   const { nombre, apellido, email, password, tipo_usuario } = req.body
 
   if (!nombre || !apellido || !email || !password || !tipo_usuario) {
     return res.status(400).json({ mensaje: 'Todos los campos son requeridos' })
   }
 
+  if (!TIPOS_VALIDOS.includes(tipo_usuario)) {
+    return res.status(400).json({ mensaje: 'Tipo de usuario inválido' })
+  }
+
+  const errorPass = validarPassword(password)
+  if (errorPass) return res.status(400).json({ mensaje: errorPass })
+
   try {
     const existe = await Usuario.findOne({ email })
     if (existe) return res.status(409).json({ mensaje: 'El email ya está registrado' })
 
-    const hash = await bcrypt.hash(password, 10)
+    const hash = await bcrypt.hash(password, 12)
     const usuario = await Usuario.create({
       nombre,
       apellido,
@@ -80,11 +98,11 @@ router.post('/', async (req, res) => {
 // POST /api/usuarios/:id/cambiar-password  (el propio usuario cambia su contraseña)
 router.post('/:id/cambiar-password', async (req, res) => {
   const { nuevaPassword } = req.body
-  if (!nuevaPassword || nuevaPassword.length < 6) {
-    return res.status(400).json({ mensaje: 'La contraseña debe tener al menos 6 caracteres' })
-  }
+  const errorPass = validarPassword(nuevaPassword)
+  if (errorPass) return res.status(400).json({ mensaje: errorPass })
+
   try {
-    const hash = await bcrypt.hash(nuevaPassword, 10)
+    const hash = await bcrypt.hash(nuevaPassword, 12)
     const usuario = await Usuario.findByIdAndUpdate(
       req.params.id,
       { contrasena: hash, requiere_cambio_contrasena: false },
@@ -105,8 +123,10 @@ router.put('/:id', async (req, res) => {
     const update = { nombre, apellido, email, tipo_usuario, activo }
 
     if (nuevaPassword) {
-      update.contrasena = await bcrypt.hash(nuevaPassword, 10)
-      update.requiere_cambio_contrasena = true  // admin reset → vuelve a pedir cambio
+      const errorPass = validarPassword(nuevaPassword)
+      if (errorPass) return res.status(400).json({ mensaje: errorPass })
+      update.contrasena = await bcrypt.hash(nuevaPassword, 12)
+      update.requiere_cambio_contrasena = true
     }
 
     const usuario = await Usuario.findByIdAndUpdate(req.params.id, update, { new: true })

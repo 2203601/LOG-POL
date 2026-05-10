@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { apiFetch } from './api'
 import './CambiarPassword.css'
 
 const RUTAS = {
@@ -30,14 +31,13 @@ export default function CambiarPassword() {
 
   async function handleSubmit(e) {
     e.preventDefault()
-    if (nueva.length < 6) { setError('La contraseña debe tener al menos 6 caracteres.'); return }
+    if (nueva.length < 8) { setError('La contraseña debe tener al menos 8 caracteres.'); return }
     if (nueva !== confirmar) { setError('Las contraseñas no coinciden.'); return }
     setError('')
     setLoading(true)
     try {
-      const res = await fetch(`http://localhost:3001/api/usuarios/${usuario.id}/cambiar-password`, {
+      const res = await apiFetch(`http://localhost:3001/api/usuarios/${usuario.id}/cambiar-password`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ nuevaPassword: nueva }),
       })
       const data = await res.json()

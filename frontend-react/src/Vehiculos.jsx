@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import Nav from './Nav'
+import { apiFetch } from './api'
 import './Vehiculos.css'
 
 const API = 'http://localhost:3001/api/vehiculos'
@@ -46,13 +47,13 @@ export default function Vehiculos() {
   }, [])
 
   async function fetchVehiculos() {
-    const res = await fetch(API)
+    const res = await apiFetch(API)
     const data = await res.json()
-    setVehiculos(data)
+    setVehiculos(Array.isArray(data) ? data : [])
   }
 
   async function fetchStats() {
-    const res = await fetch(`${API}/stats`)
+    const res = await apiFetch(`${API}/stats`)
     const data = await res.json()
     setStats(data)
   }
@@ -60,9 +61,8 @@ export default function Vehiculos() {
   async function submitNuevo() {
     if (!formNuevo.patente) { setErrorNuevo('La patente es requerida'); return }
     setErrorNuevo('')
-    const res = await fetch(API, {
+    const res = await apiFetch(API, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ ...formNuevo, anio: formNuevo.anio ? Number(formNuevo.anio) : undefined, capacidad_kg: formNuevo.capacidad_kg ? Number(formNuevo.capacidad_kg) : undefined })
     })
     if (!res.ok) { const d = await res.json(); setErrorNuevo(d.mensaje); return }
@@ -73,9 +73,8 @@ export default function Vehiculos() {
   }
 
   async function submitEditar() {
-    const res = await fetch(`${API}/${formEditar._id}`, {
+    const res = await apiFetch(`${API}/${formEditar._id}`, {
       method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ ...formEditar, anio: formEditar.anio ? Number(formEditar.anio) : undefined, capacidad_kg: formEditar.capacidad_kg ? Number(formEditar.capacidad_kg) : undefined })
     })
     if (res.ok) {

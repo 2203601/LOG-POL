@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import Nav from './Nav'
+import { apiFetch } from './api'
 import './RRHH.css'
 
 const API = 'http://localhost:3001/api/usuarios'
@@ -68,13 +69,13 @@ export default function RRHH() {
   }, [])
 
   async function fetchUsuarios() {
-    const res = await fetch(API)
+    const res = await apiFetch(API)
     const data = await res.json()
-    setUsuarios(data)
+    setUsuarios(Array.isArray(data) ? data : [])
   }
 
   async function fetchStats() {
-    const res = await fetch(`${API}/stats`)
+    const res = await apiFetch(`${API}/stats`)
     const data = await res.json()
     setStats(data)
   }
@@ -94,9 +95,8 @@ export default function RRHH() {
     setErrorCrear('')
     setLoadingCrear(true)
     try {
-      const res = await fetch(API, {
+      const res = await apiFetch(API, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ nombre, apellido, email, password, tipo_usuario })
       })
       if (!res.ok) { const d = await res.json(); setErrorCrear(d.mensaje); return }
@@ -112,9 +112,8 @@ export default function RRHH() {
 
   async function submitEditar() {
     const { _id, nombre, apellido, email, tipo_usuario, activo, nuevaPassword } = formEditar
-    const res = await fetch(`${API}/${_id}`, {
+    const res = await apiFetch(`${API}/${_id}`, {
       method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ nombre, apellido, email, tipo_usuario, activo, nuevaPassword: nuevaPassword || undefined })
     })
     if (res.ok) {
@@ -125,7 +124,7 @@ export default function RRHH() {
   }
 
   async function submitEliminar() {
-    await fetch(`${API}/${elimTarget._id}`, { method: 'DELETE' })
+    await apiFetch(`${API}/${elimTarget._id}`, { method: 'DELETE' })
     setModalEliminar(false)
     await fetchUsuarios()
     await fetchStats()

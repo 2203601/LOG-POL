@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import Nav from './Nav'
+import { apiFetch } from './api'
 import './Pedidos.css'
 
 const API  = 'http://localhost:3001/api/pedidos'
@@ -46,21 +47,21 @@ export default function Pedidos() {
   }, [])
 
   async function fetchPedidos() {
-    const res = await fetch(API)
+    const res = await apiFetch(API)
     const data = await res.json()
-    setPedidos(data)
+    setPedidos(Array.isArray(data) ? data : [])
   }
 
   async function fetchStats() {
-    const res = await fetch(`${API}/stats`)
+    const res = await apiFetch(`${API}/stats`)
     const data = await res.json()
     setStats(data)
   }
 
   async function fetchVehiculos() {
-    const res = await fetch(VAPI)
+    const res = await apiFetch(VAPI)
     const data = await res.json()
-    setVehiculos(data)
+    setVehiculos(Array.isArray(data) ? data : [])
   }
 
   const totalPeso = productos.reduce((s, p) => {
@@ -81,9 +82,8 @@ export default function Pedidos() {
         peso_unitario_kg: parseFloat(p.peso_unitario_kg) || 0
       }))
     }
-    const res = await fetch(API, {
+    const res = await apiFetch(API, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body)
     })
     if (!res.ok) { const d = await res.json(); setErrorNuevo(d.mensaje); return }
@@ -97,9 +97,8 @@ export default function Pedidos() {
   async function submitAsignar() {
     if (!asignarTarget.vehiculoId) return
     setErrorAsignar('')
-    const res = await fetch(`${API}/${asignarTarget.pedido._id}/asignar`, {
+    const res = await apiFetch(`${API}/${asignarTarget.pedido._id}/asignar`, {
       method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ vehiculo_id: asignarTarget.vehiculoId })
     })
     if (!res.ok) { const d = await res.json(); setErrorAsignar(d.mensaje); return }

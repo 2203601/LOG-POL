@@ -53,7 +53,7 @@ router.get('/stats', async (req, res) => {
 
 // POST /api/usuarios  — solo RRHH puede crear usuarios
 router.post('/', soloRol('Recursos Humanos'), async (req, res) => {
-  const { nombre, apellido, email, password, tipo_usuario } = req.body
+  const { nombre, apellido, email, password, tipo_usuario, dni } = req.body
 
   if (!nombre || !apellido || !email || !password || !tipo_usuario) {
     return res.status(400).json({ mensaje: 'Todos los campos son requeridos' })
@@ -61,6 +61,10 @@ router.post('/', soloRol('Recursos Humanos'), async (req, res) => {
 
   if (!TIPOS_VALIDOS.includes(tipo_usuario)) {
     return res.status(400).json({ mensaje: 'Tipo de usuario inválido' })
+  }
+
+  if (tipo_usuario === 'Chofer' && !dni) {
+    return res.status(400).json({ mensaje: 'El DNI es requerido para choferes' })
   }
 
   const errorPass = validarPassword(password)
@@ -85,7 +89,8 @@ router.post('/', soloRol('Recursos Humanos'), async (req, res) => {
       await Conductor.create({
         usuario_id: usuario._id,
         nombre,
-        apellido
+        apellido,
+        dni
       })
     }
 

@@ -3,13 +3,17 @@ import './Nav.css'
 
 const LINKS = {
   'Encargado de logística': [
-    { to: '/pedidos',   label: 'Pedidos' },
-    { to: '/vehiculos', label: 'Vehículos' },
+    { to: '/pedidos',      label: 'Pedidos' },
+    { to: '/vehiculos',    label: 'Vehículos' },
+    { to: '/seguimiento',  label: 'Seguimiento' },
   ],
   'Recursos Humanos': [
-    { to: '/rrhh', label: 'Crear Cuenta' },
+    { to: '/rrhh',         label: 'Usuarios' },
+    { to: '/seguimiento',  label: 'Seguimiento' },
   ],
-  'Chofer': [],
+  'Chofer': [
+    { to: '/seguimiento',  label: 'Mis entregas' },
+  ],
 }
 
 export default function Nav() {

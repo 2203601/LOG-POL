@@ -4,6 +4,7 @@ const Vehiculo  = require('../models/Vehiculo')
 const Entrega   = require('../models/Entrega')
 const Conductor = require('../models/Conductor')
 const Producto  = require('../models/Producto')
+const { soloRol } = require('../middleware/auth')
 
 const router = express.Router()
 
@@ -92,8 +93,8 @@ router.get('/', async (req, res) => {
   }
 })
 
-// PUT /api/seguimiento/:id/entregar
-router.put('/:id/entregar', async (req, res) => {
+// PUT /api/seguimiento/:id/entregar  (solo Chofer y Recursos Humanos)
+router.put('/:id/entregar', soloRol('Chofer', 'Recursos Humanos'), async (req, res) => {
   try {
     const pedido = await Pedido.findByIdAndUpdate(
       req.params.id,

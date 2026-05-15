@@ -37,6 +37,9 @@ function PrioridadBadge({ prioridad }) {
 }
 
 export default function Seguimiento() {
+  const usuario = JSON.parse(localStorage.getItem('usuario') || '{}')
+  const esLogistica = usuario.tipo_usuario === 'Encargado de logística'
+
   const [vista, setVista]       = useState('en-ruta')
   const [pedidos, setPedidos]   = useState([])
   const [stats, setStats]       = useState({ en_ruta: 0, entregados_hoy: 0, retrasados: 0, urgentes: 0 })
@@ -320,7 +323,7 @@ export default function Seguimiento() {
                       <button className="btn-detalle" onClick={() => setDetalle(p)}>
                         Ver detalle
                       </button>
-                      {vista === 'en-ruta' && (
+                      {vista === 'en-ruta' && !esLogistica && (
                         <button
                           className="btn-entregar"
                           onClick={() => setConfirmando(p)}
@@ -477,7 +480,7 @@ export default function Seguimiento() {
           )}
           <div className="modal-foot">
             <button className="btnc" onClick={() => setDetalle(null)}>Cerrar</button>
-            {detalle && detalle.estado !== 'Entregado' && (
+            {detalle && detalle.estado !== 'Entregado' && !esLogistica && (
               <button
                 className="btnok"
                 style={{ background: '#22C55E', color: '#fff' }}

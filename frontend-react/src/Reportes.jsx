@@ -63,9 +63,11 @@ function fmtHora(iso) {
   return new Date(iso).toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' })
 }
 
-function descargarCSV(csv, nombre) {
-  const bom = '﻿'
-  const blob = new Blob([bom + csv], { type: 'text/csv;charset=utf-8;' })
+function descargarPDF(base64, nombre) {
+  const bytes  = atob(base64)
+  const buffer = new Uint8Array(bytes.length)
+  for (let i = 0; i < bytes.length; i++) buffer[i] = bytes.charCodeAt(i)
+  const blob = new Blob([buffer], { type: 'application/pdf' })
   const url  = URL.createObjectURL(blob)
   const a    = document.createElement('a')
   a.href     = url
@@ -217,13 +219,13 @@ export default function Reportes() {
               </div>
               <button
                 className="btn-download"
-                onClick={() => descargarCSV(resultado.csv, `reporte_${tipo}_${fechaDesde}_${fechaHasta}.csv`)}
+                onClick={() => descargarPDF(resultado.pdf, `reporte_${tipo}_${fechaDesde}_${fechaHasta}.pdf`)}
               >
                 <svg width="15" height="15" viewBox="0 0 15 15" fill="none">
                   <path d="M7.5 2 L7.5 10 M4 7 L7.5 10.5 L11 7" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
                   <path d="M2 12 L13 12" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
                 </svg>
-                Descargar CSV
+                Descargar PDF
               </button>
             </div>
           )}
@@ -303,8 +305,8 @@ export default function Reportes() {
           <div className="rp-lbl">Formatos disponibles</div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
             <div className="fmt-row">
-              <span className="fmt-badge fmt-csv">CSV</span>
-              <span style={{ fontSize: 12, color: 'rgba(255,255,255,.6)' }}>Compatible con Excel y Google Sheets</span>
+              <span className="fmt-badge fmt-pdf">PDF</span>
+              <span style={{ fontSize: 12, color: 'rgba(255,255,255,.6)' }}>Listo para imprimir y compartir</span>
             </div>
           </div>
 

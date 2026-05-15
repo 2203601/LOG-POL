@@ -170,3 +170,4 @@
 .fmt-row  { display: flex; align-items: center; gap: 10px; }
 .fmt-badge { display: inline-flex; padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 700; }
 .fmt-csv  { background: rgba(255,255,255,.15); color: #fff; }
+.fmt-pdf  { background: #EF4444; color: #fff; }

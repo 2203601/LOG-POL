@@ -6,10 +6,12 @@ const LINKS = {
     { to: '/pedidos',      label: 'Pedidos' },
     { to: '/vehiculos',    label: 'Vehículos' },
     { to: '/seguimiento',  label: 'Seguimiento' },
+    { to: '/reportes',     label: 'Reportes' },
   ],
   'Recursos Humanos': [
     { to: '/rrhh',         label: 'Usuarios' },
     { to: '/seguimiento',  label: 'Seguimiento' },
+    { to: '/reportes',     label: 'Reportes' },
   ],
   'Chofer': [
     { to: '/seguimiento',  label: 'Mis entregas' },

@@ -8,6 +8,7 @@ const usuariosRouter    = require('./routes/usuarios')
 const vehiculosRouter   = require('./routes/vehiculos')
 const pedidosRouter     = require('./routes/pedidos')
 const seguimientoRouter = require('./routes/seguimiento')
+const reportesRouter    = require('./routes/reportes')
 const { verificarToken } = require('./middleware/auth')
 
 const app = express()
@@ -22,5 +23,6 @@ app.use('/api/usuarios',    verificarToken, usuariosRouter)
 app.use('/api/vehiculos',   verificarToken, vehiculosRouter)
 app.use('/api/pedidos',     verificarToken, pedidosRouter)
 app.use('/api/seguimiento', verificarToken, seguimientoRouter)
+app.use('/api/reportes',   verificarToken, reportesRouter)
 
 module.exports = app

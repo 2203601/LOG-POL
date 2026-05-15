@@ -17,16 +17,26 @@ function alertaTiempo(pedido) {
 
 async function enriquecerPedidos(pedidos) {
   const ids = pedidos.map(p => p._id)
-  const productos = await Producto.find({ pedido_id: { $in: ids } }).lean()
+
+  const [productos, entregas] = await Promise.all([
+    Producto.find({ pedido_id: { $in: ids } }).lean(),
+    Entrega.find({ pedido_id: { $in: ids } }).lean()
+  ])
+
   const prodMap = {}
   productos.forEach(pr => {
     const k = pr.pedido_id.toString()
     if (!prodMap[k]) prodMap[k] = []
     prodMap[k].push(pr)
   })
+
+  const entregaMap = {}
+  entregas.forEach(e => { entregaMap[e.pedido_id.toString()] = e })
+
   return pedidos.map(p => ({
     ...p,
     productos: prodMap[p._id.toString()] || [],
+    entrega:   entregaMap[p._id.toString()] || null,
     alerta: alertaTiempo(p),
     tiempo_en_ruta_hs: Math.round((Date.now() - new Date(p.fecha_creacion)) / 3_600_000)
   }))
@@ -51,10 +61,11 @@ router.get('/stats', async (req, res) => {
   }
 })
 
-// GET /api/seguimiento
+// GET /api/seguimiento?estado=En+ruta|Entregado
 router.get('/', async (req, res) => {
   try {
-    let query = { estado: 'En ruta' }
+    const estado = req.query.estado || 'En ruta'
+    let query = { estado }
 
     if (req.usuario.tipo_usuario === 'Chofer') {
       const conductor = await Conductor.findOne({ usuario_id: req.usuario.id }).lean()
@@ -66,9 +77,13 @@ router.get('/', async (req, res) => {
       query.vehiculo_id = { $in: vehiculos.map(v => v._id) }
     }
 
+    const sort = estado === 'Entregado'
+      ? { updatedAt: -1 }
+      : { fecha_entrega_estimada: 1 }
+
     const pedidos = await Pedido.find(query)
       .populate('vehiculo_id', 'patente marca modelo conductor_asignado conductor_dni capacidad_kg')
-      .sort({ fecha_entrega_estimada: 1 })
+      .sort(sort)
       .lean()
 
     res.json(await enriquecerPedidos(pedidos))

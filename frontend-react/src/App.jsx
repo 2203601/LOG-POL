@@ -4,6 +4,7 @@ import RRHH from './RRHH'
 import Vehiculos from './Vehiculos'
 import Pedidos from './Pedidos'
 import Seguimiento from './Seguimiento'
+import Reportes from './Reportes'
 import CambiarPassword from './CambiarPassword'
 import './App.css'
 
@@ -17,6 +18,7 @@ export default function App() {
         <Route path="/vehiculos"        element={<Vehiculos />} />
         <Route path="/pedidos"          element={<Pedidos />} />
         <Route path="/seguimiento"      element={<Seguimiento />} />
+        <Route path="/reportes"         element={<Reportes />} />
         <Route path="*"                 element={<Navigate to="/login" replace />} />
       </Routes>
     </BrowserRouter>

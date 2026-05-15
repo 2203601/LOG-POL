@@ -37,9 +37,7 @@ function PrioridadBadge({ prioridad }) {
 }
 
 export default function Seguimiento() {
-  const usuario = JSON.parse(localStorage.getItem('usuario') || '{}')
-  const esChofer = usuario.tipo_usuario === 'Chofer'
-
+  const [vista, setVista]       = useState('en-ruta')
   const [pedidos, setPedidos]   = useState([])
   const [stats, setStats]       = useState({ en_ruta: 0, entregados_hoy: 0, retrasados: 0, urgentes: 0 })
   const [search, setSearch]     = useState('')
@@ -51,9 +49,11 @@ export default function Seguimiento() {
   const [toast, setToast]       = useState(null)
 
   const fetchTodo = useCallback(async () => {
+    setLoading(true)
     try {
+      const estado = vista === 'en-ruta' ? 'En ruta' : 'Entregado'
       const [rPedidos, rStats] = await Promise.all([
-        apiFetch(API),
+        apiFetch(`${API}?estado=${encodeURIComponent(estado)}`),
         apiFetch(`${API}/stats`)
       ])
       const dPedidos = await rPedidos.json()
@@ -63,7 +63,7 @@ export default function Seguimiento() {
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [vista])
 
   useEffect(() => {
     fetchTodo()
@@ -136,21 +136,35 @@ export default function Seguimiento() {
 
           <div className="page-hd">
             <div>
-              <div className="page-ttl">Seguimiento en tiempo real</div>
+              <div className="page-ttl">Seguimiento de entregas</div>
               <div className="page-sub">
-                {loading ? 'Cargando...' : `${pedidos.length} pedido${pedidos.length !== 1 ? 's' : ''} en ruta · actualiza cada 60s`}
+                {loading ? 'Cargando...' : vista === 'en-ruta'
+                  ? `${pedidos.length} pedido${pedidos.length !== 1 ? 's' : ''} en ruta · actualiza cada 60s`
+                  : `${pedidos.length} entrega${pedidos.length !== 1 ? 's' : ''} registrada${pedidos.length !== 1 ? 's' : ''}`}
               </div>
             </div>
-            <button className="btn-refresh" onClick={fetchTodo} title="Actualizar">
-              <svg width="15" height="15" viewBox="0 0 15 15" fill="none">
-                <path d="M13 7.5A5.5 5.5 0 1 1 7.5 2H10M10 2L8 4.5M10 2L12.5 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
-              Actualizar
-            </button>
+            <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+              <div className="seg-tabs">
+                <button className={`seg-tab${vista === 'en-ruta' ? ' on' : ''}`} onClick={() => { setVista('en-ruta'); setAlertaFilter(''); setSearch('') }}>
+                  En ruta
+                  {stats.en_ruta > 0 && <span className="seg-tab-count">{stats.en_ruta}</span>}
+                </button>
+                <button className={`seg-tab${vista === 'entregados' ? ' on' : ''}`} onClick={() => { setVista('entregados'); setAlertaFilter(''); setSearch('') }}>
+                  Entregados
+                  {stats.entregados_hoy > 0 && <span className="seg-tab-count">{stats.entregados_hoy}</span>}
+                </button>
+              </div>
+              <button className="btn-refresh" onClick={fetchTodo} title="Actualizar">
+                <svg width="15" height="15" viewBox="0 0 15 15" fill="none">
+                  <path d="M13 7.5A5.5 5.5 0 1 1 7.5 2H10M10 2L8 4.5M10 2L12.5 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+                Actualizar
+              </button>
+            </div>
           </div>
 
           {/* ALERTS STRIP */}
-          {(retrasados > 0 || urgentes > 0) && (
+          {vista === 'en-ruta' && (retrasados > 0 || urgentes > 0) && (
             <div className="alert-strip">
               {retrasados > 0 && (
                 <div className="alert-item a-red">
@@ -188,23 +202,25 @@ export default function Seguimiento() {
                 onChange={e => setSearch(e.target.value)}
               />
             </div>
-            <div className="seg-tabs">
-              {[
-                { val: '',           label: 'Todos',      count: pedidos.length },
-                { val: 'retrasado',  label: 'Retrasados', count: retrasados },
-                { val: 'urgente',    label: 'Urgentes',   count: urgentes },
-                { val: 'en-tiempo',  label: 'En tiempo',  count: pedidos.filter(p => p.alerta === 'en-tiempo').length },
-              ].map(t => (
-                <button
-                  key={t.val}
-                  className={`seg-tab${alertaFilter === t.val ? ' on' : ''}`}
-                  onClick={() => setAlertaFilter(t.val)}
-                >
-                  {t.label}
-                  {t.count > 0 && <span className="seg-tab-count">{t.count}</span>}
-                </button>
-              ))}
-            </div>
+            {vista === 'en-ruta' && (
+              <div className="seg-tabs">
+                {[
+                  { val: '',           label: 'Todos',      count: pedidos.length },
+                  { val: 'retrasado',  label: 'Retrasados', count: retrasados },
+                  { val: 'urgente',    label: 'Urgentes',   count: urgentes },
+                  { val: 'en-tiempo',  label: 'En tiempo',  count: pedidos.filter(p => p.alerta === 'en-tiempo').length },
+                ].map(t => (
+                  <button
+                    key={t.val}
+                    className={`seg-tab${alertaFilter === t.val ? ' on' : ''}`}
+                    onClick={() => setAlertaFilter(t.val)}
+                  >
+                    {t.label}
+                    {t.count > 0 && <span className="seg-tab-count">{t.count}</span>}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* CARDS */}
@@ -278,13 +294,25 @@ export default function Seguimiento() {
                         <div className="scd-val">{p.peso_total_kg ? `${p.peso_total_kg} kg` : '—'}</div>
                         {p.productos?.length > 0 && <div className="scd-sub">{p.productos.length} producto{p.productos.length > 1 ? 's' : ''}</div>}
                       </div>
-                      <div className="scd-item">
-                        <div className="scd-lbl">Entrega estimada</div>
-                        <div className={`scd-val${p.alerta === 'retrasado' ? ' txt-red' : p.alerta === 'urgente' ? ' txt-amber' : ''}`}>
-                          {formatFecha(p.fecha_entrega_estimada)}
+                      {vista === 'en-ruta' ? (
+                        <div className="scd-item">
+                          <div className="scd-lbl">Entrega estimada</div>
+                          <div className={`scd-val${p.alerta === 'retrasado' ? ' txt-red' : p.alerta === 'urgente' ? ' txt-amber' : ''}`}>
+                            {formatFecha(p.fecha_entrega_estimada)}
+                          </div>
+                          {p.fecha_entrega_estimada && <div className="scd-sub">{formatHora(p.fecha_entrega_estimada)} hs</div>}
                         </div>
-                        {p.fecha_entrega_estimada && <div className="scd-sub">{formatHora(p.fecha_entrega_estimada)} hs</div>}
-                      </div>
+                      ) : (
+                        <div className="scd-item">
+                          <div className="scd-lbl">Entregado el</div>
+                          <div className="scd-val" style={{ color: '#15803D' }}>
+                            {p.entrega?.fecha_entrega ? formatFecha(p.entrega.fecha_entrega) : formatFecha(p.updatedAt)}
+                          </div>
+                          {(p.entrega?.fecha_entrega || p.updatedAt) && (
+                            <div className="scd-sub">{formatHora(p.entrega?.fecha_entrega || p.updatedAt)} hs</div>
+                          )}
+                        </div>
+                      )}
                     </div>
 
                     {/* ACTIONS */}
@@ -292,7 +320,7 @@ export default function Seguimiento() {
                       <button className="btn-detalle" onClick={() => setDetalle(p)}>
                         Ver detalle
                       </button>
-                      {(esChofer || !esChofer) && (
+                      {vista === 'en-ruta' && (
                         <button
                           className="btn-entregar"
                           onClick={() => setConfirmando(p)}
@@ -300,6 +328,9 @@ export default function Seguimiento() {
                         >
                           {entregando === p._id ? 'Registrando...' : '✓ Marcar entregado'}
                         </button>
+                      )}
+                      {vista === 'entregados' && (
+                        <span className="badge b-ok" style={{ padding: '6px 14px', fontSize: 12 }}>✓ Entregado</span>
                       )}
                     </div>
                   </div>
@@ -446,7 +477,7 @@ export default function Seguimiento() {
           )}
           <div className="modal-foot">
             <button className="btnc" onClick={() => setDetalle(null)}>Cerrar</button>
-            {detalle && (
+            {detalle && detalle.estado !== 'Entregado' && (
               <button
                 className="btnok"
                 style={{ background: '#22C55E', color: '#fff' }}

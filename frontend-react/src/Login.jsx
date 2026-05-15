@@ -5,7 +5,7 @@ import './Login.css'
 const RUTAS = {
   'Encargado de logística': '/pedidos',
   'Recursos Humanos': '/rrhh',
-  'Chofer': '/vehiculos',
+  'Chofer': '/seguimiento',
 }
 
 export default function Login() {

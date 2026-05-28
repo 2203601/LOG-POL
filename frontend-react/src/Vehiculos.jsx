@@ -22,8 +22,10 @@ function estadoPill(estado) {
   return <span className="pill p-serv"><span className="pdot" />{estado || 'Sin estado'}</span>
 }
 
-const EMPTY_NUEVO  = { patente: '', anio: '', marca: '', modelo: '', capacidad_kg: '', conductor_asignado: '', conductor_dni: '', estado: 'Disponible' }
-const EMPTY_EDITAR = { _id: '', patente: '', anio: '', marca: '', modelo: '', capacidad_kg: '', conductor_asignado: '', conductor_dni: '', estado: 'Disponible' }
+const UAPI = 'http://localhost:3001/api/usuarios'
+
+const EMPTY_NUEVO  = { patente: '', anio: '', marca: '', modelo: '', capacidad_kg: '', conductor_asignado: '', conductor_dni: '', estado: 'Disponible', conductor_sel: '' }
+const EMPTY_EDITAR = { _id: '', patente: '', anio: '', marca: '', modelo: '', capacidad_kg: '', conductor_asignado: '', conductor_dni: '', estado: 'Disponible', conductor_sel: '' }
 
 export default function Vehiculos() {
   const [vehiculos, setVehiculos]     = useState([])
@@ -40,11 +42,19 @@ export default function Vehiculos() {
   const [formEditar, setFormEditar]   = useState(EMPTY_EDITAR)
   const [detalle, setDetalle]         = useState(null)
   const [errorNuevo, setErrorNuevo]   = useState('')
+  const [choferes, setChoferes]       = useState([])
 
   useEffect(() => {
     fetchVehiculos()
     fetchStats()
+    fetchChoferes()
   }, [])
+
+  async function fetchChoferes() {
+    const res = await apiFetch(UAPI)
+    const data = await res.json()
+    setChoferes(Array.isArray(data) ? data.filter(u => u.tipo_usuario === 'Chofer' && u.activo) : [])
+  }
 
   async function fetchVehiculos() {
     const res = await apiFetch(API)
@@ -61,9 +71,10 @@ export default function Vehiculos() {
   async function submitNuevo() {
     if (!formNuevo.patente) { setErrorNuevo('La patente es requerida'); return }
     setErrorNuevo('')
+    const { conductor_sel: _cs, ...payload } = formNuevo
     const res = await apiFetch(API, {
       method: 'POST',
-      body: JSON.stringify({ ...formNuevo, anio: formNuevo.anio ? Number(formNuevo.anio) : undefined, capacidad_kg: formNuevo.capacidad_kg ? Number(formNuevo.capacidad_kg) : undefined })
+      body: JSON.stringify({ ...payload, anio: payload.anio ? Number(payload.anio) : undefined, capacidad_kg: payload.capacidad_kg ? Number(payload.capacidad_kg) : undefined })
     })
     if (!res.ok) { const d = await res.json(); setErrorNuevo(d.mensaje); return }
     setModalNuevo(false)
@@ -73,9 +84,10 @@ export default function Vehiculos() {
   }
 
   async function submitEditar() {
-    const res = await apiFetch(`${API}/${formEditar._id}`, {
+    const { conductor_sel: _cs, ...payload } = formEditar
+    const res = await apiFetch(`${API}/${payload._id}`, {
       method: 'PUT',
-      body: JSON.stringify({ ...formEditar, anio: formEditar.anio ? Number(formEditar.anio) : undefined, capacidad_kg: formEditar.capacidad_kg ? Number(formEditar.capacidad_kg) : undefined })
+      body: JSON.stringify({ ...payload, anio: payload.anio ? Number(payload.anio) : undefined, capacidad_kg: payload.capacidad_kg ? Number(payload.capacidad_kg) : undefined })
     })
     if (res.ok) {
       setModalEditar(false)
@@ -84,8 +96,27 @@ export default function Vehiculos() {
     }
   }
 
+  function datosChofer(id) {
+    const c = choferes.find(u => u._id === id)
+    if (!c) return { conductor_asignado: '', conductor_dni: '' }
+    return {
+      conductor_asignado: `${c.nombre} ${c.apellido}`,
+      conductor_dni: c.conductor?.dni || ''
+    }
+  }
+
   function openEditar(v) {
-    setFormEditar({ _id: v._id, patente: v.patente || '', anio: v.anio || '', marca: v.marca || '', modelo: v.modelo || '', capacidad_kg: v.capacidad_kg || '', conductor_asignado: v.conductor_asignado || '', conductor_dni: v.conductor_dni || '', estado: v.estado || 'Disponible' })
+    const match = choferes.find(u =>
+      `${u.nombre} ${u.apellido}`.toLowerCase() === (v.conductor_asignado || '').toLowerCase()
+    )
+    setFormEditar({
+      _id: v._id, patente: v.patente || '', anio: v.anio || '',
+      marca: v.marca || '', modelo: v.modelo || '',
+      capacidad_kg: v.capacidad_kg || '', estado: v.estado || 'Disponible',
+      conductor_asignado: v.conductor_asignado || '',
+      conductor_dni: v.conductor_dni || '',
+      conductor_sel: match?._id || ''
+    })
     setModalEditar(true)
   }
 
@@ -375,13 +406,23 @@ export default function Vehiculos() {
                   <option>Fuera de servicio</option>
                 </select>
               </div>
-              <div>
+              <div className="m-full">
                 <label className="flbl">Conductor asignado</label>
-                <input className="finput" placeholder="Nombre del conductor" value={formNuevo.conductor_asignado} onChange={e => setFormNuevo(f => ({ ...f, conductor_asignado: e.target.value }))} />
-              </div>
-              <div>
-                <label className="flbl">DNI del conductor</label>
-                <input className="finput" placeholder="Ej: 30123456" value={formNuevo.conductor_dni} onChange={e => setFormNuevo(f => ({ ...f, conductor_dni: e.target.value }))} />
+                <select
+                  className="finput"
+                  value={formNuevo.conductor_sel}
+                  onChange={e => {
+                    const datos = datosChofer(e.target.value)
+                    setFormNuevo(f => ({ ...f, conductor_sel: e.target.value, ...datos }))
+                  }}
+                >
+                  <option value="">— Sin conductor —</option>
+                  {choferes.map(c => (
+                    <option key={c._id} value={c._id}>
+                      {c.nombre} {c.apellido}{c.conductor?.dni ? ` — DNI ${c.conductor.dni}` : ''}
+                    </option>
+                  ))}
+                </select>
               </div>
             </div>
             {errorNuevo && <div style={{ fontSize: 12, color: 'var(--re)', background: '#FFF0F0', padding: '8px 12px', borderRadius: 8, border: '1px solid #f5c0c0' }}>{errorNuevo}</div>}
@@ -430,13 +471,23 @@ export default function Vehiculos() {
                   <option>Fuera de servicio</option>
                 </select>
               </div>
-              <div>
+              <div className="m-full">
                 <label className="flbl">Conductor asignado</label>
-                <input className="finput" value={formEditar.conductor_asignado} onChange={e => setFormEditar(f => ({ ...f, conductor_asignado: e.target.value }))} />
-              </div>
-              <div>
-                <label className="flbl">DNI del conductor</label>
-                <input className="finput" value={formEditar.conductor_dni} onChange={e => setFormEditar(f => ({ ...f, conductor_dni: e.target.value }))} />
+                <select
+                  className="finput"
+                  value={formEditar.conductor_sel}
+                  onChange={e => {
+                    const datos = datosChofer(e.target.value)
+                    setFormEditar(f => ({ ...f, conductor_sel: e.target.value, ...datos }))
+                  }}
+                >
+                  <option value="">— Sin conductor —</option>
+                  {choferes.map(c => (
+                    <option key={c._id} value={c._id}>
+                      {c.nombre} {c.apellido}{c.conductor?.dni ? ` — DNI ${c.conductor.dni}` : ''}
+                    </option>
+                  ))}
+                </select>
               </div>
             </div>
           </div>

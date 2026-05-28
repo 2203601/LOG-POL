@@ -6,7 +6,7 @@ import './CambiarPassword.css'
 const RUTAS = {
   'Encargado de logística': '/pedidos',
   'Recursos Humanos': '/rrhh',
-  'Chofer': '/vehiculos',
+  'Chofer': '/seguimiento',
 }
 
 function passStrength(p) {

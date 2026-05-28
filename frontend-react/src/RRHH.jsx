@@ -24,10 +24,10 @@ function formatUltimoLogin(iso) {
 }
 
 function passScore(v) {
-  const len = v.length
-  const hasMay = /[A-Z]/.test(v)
-  const hasNum = /[0-9]/.test(v)
-  return (len >= 8 ? 1 : 0) + (hasMay ? 1 : 0) + (hasNum ? 1 : 0)
+  return (v.length >= 8 ? 1 : 0) +
+         (/[A-Z]/.test(v) ? 1 : 0) +
+         (/[0-9]/.test(v) ? 1 : 0) +
+         (/[^A-Za-z0-9]/.test(v) ? 1 : 0)
 }
 
 function rolPill(tipo) {
@@ -42,7 +42,7 @@ function avColor(tipo) {
   return {}
 }
 
-const EMPTY_CREAR = { nombre: '', apellido: '', email: '', password: '', confirmar: '', tipo_usuario: 'Encargado de logística' }
+const EMPTY_CREAR = { nombre: '', apellido: '', email: '', password: '', confirmar: '', tipo_usuario: 'Encargado de logística', dni: '' }
 const EMPTY_EDITAR = { _id: '', nombre: '', apellido: '', email: '', tipo_usuario: '', activo: true, nuevaPassword: '' }
 
 export default function RRHH() {
@@ -89,15 +89,16 @@ export default function RRHH() {
   })
 
   async function submitCrear() {
-    const { nombre, apellido, email, password, confirmar, tipo_usuario } = formCrear
+    const { nombre, apellido, email, password, confirmar, tipo_usuario, dni } = formCrear
     if (!nombre || !apellido || !email || !password) { setErrorCrear('Completá todos los campos'); return }
+    if (tipo_usuario === 'Chofer' && !dni) { setErrorCrear('El DNI es requerido para choferes'); return }
     if (password !== confirmar) { setErrorCrear('Las contraseñas no coinciden'); return }
     setErrorCrear('')
     setLoadingCrear(true)
     try {
       const res = await apiFetch(API, {
         method: 'POST',
-        body: JSON.stringify({ nombre, apellido, email, password, tipo_usuario })
+        body: JSON.stringify({ nombre, apellido, email, password, tipo_usuario, dni: dni || undefined })
       })
       if (!res.ok) { const d = await res.json(); setErrorCrear(d.mensaje); return }
       setModalCrear(false)
@@ -136,8 +137,13 @@ export default function RRHH() {
   }
 
   const score = passScore(formCrear.password)
-  const barCls = score === 1 ? 'war' : score === 2 ? 'ok' : score === 3 ? 'str' : ''
-  const passTxt = !formCrear.password ? 'Ingresá una contraseña' : ['', 'Contraseña débil', 'Contraseña media', 'Contraseña fuerte'][score] || 'Muy corta'
+  const barCls = score <= 1 ? 'war' : score <= 2 ? 'ok' : score <= 3 ? 'ok' : 'str'
+  const passTxt = !formCrear.password
+    ? 'Mín. 8 caracteres, mayúscula, número y carácter especial'
+    : score === 4 ? 'Contraseña fuerte'
+    : score === 3 ? 'Falta un carácter especial (ej: !@#$)'
+    : score === 2 ? 'Contraseña débil'
+    : 'Muy corta o simple'
 
   const byRol = (rol) => usuarios.filter(u => u.tipo_usuario === rol).length
 
@@ -388,6 +394,12 @@ export default function RRHH() {
                 <label className="flbl">Correo electrónico</label>
                 <input className="finput" type="email" placeholder="usuario@polher.com" value={formCrear.email} onChange={e => setFormCrear(f => ({ ...f, email: e.target.value }))} />
               </div>
+              {formCrear.tipo_usuario === 'Chofer' && (
+                <div className="m-full">
+                  <label className="flbl">DNI *</label>
+                  <input className="finput" placeholder="Ej: 30123456" value={formCrear.dni} onChange={e => setFormCrear(f => ({ ...f, dni: e.target.value }))} />
+                </div>
+              )}
             </div>
             <div className="m-sep" />
             <div className="m-grid">
@@ -397,7 +409,7 @@ export default function RRHH() {
                 <div className="pass-strength">
                   {[0, 1, 2].map(i => <div key={i} className={`ps-bar${i < score ? ' ' + barCls : ''}`} />)}
                 </div>
-                <div className="ps-txt" style={{ color: score === 3 ? 'var(--gr)' : score === 2 ? 'var(--bm)' : score === 1 ? 'var(--ad)' : 'var(--g400)' }}>{passTxt}</div>
+                <div className="ps-txt" style={{ color: score === 4 ? 'var(--gr)' : score >= 2 ? 'var(--bm)' : score === 1 ? 'var(--ad)' : 'var(--g400)' }}>{passTxt}</div>
               </div>
               <div>
                 <label className="flbl">Confirmar contraseña</label>

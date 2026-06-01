@@ -1,0 +1,90 @@
+name: Pipeline — Build & Deploy
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  # ── BUILD FRONTEND ──────────────────────────────────────────────────────────
+  build-frontend:
+    name: Build frontend (Vite)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend-react
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+          cache-dependency-path: frontend-react/pnpm-lock.yaml
+
+      - name: Instalar dependencias
+        run: pnpm install --frozen-lockfile
+
+      - name: Build
+        run: pnpm build
+        env:
+          VITE_API_URL: ${{ secrets.VITE_API_URL }}
+
+      - name: Verificar que dist/ fue generado
+        run: test -d dist && echo "dist OK"
+
+  # ── VALIDAR BACKEND ─────────────────────────────────────────────────────────
+  validate-backend:
+    name: Validar backend (syntax + deps)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+          cache-dependency-path: backend/pnpm-lock.yaml
+
+      - name: Instalar dependencias de producción
+        run: pnpm install --frozen-lockfile --prod
+
+      - name: Verificar que la app carga sin errores de sintaxis
+        run: node --check server.js && node --check app.js
+        env:
+          JWT_SECRET: ci-check-only
+          MONGO_URI: mongodb://localhost/ci
+          CORS_ORIGIN: http://localhost:5173
+
+  # ── DEPLOY A RENDER ─────────────────────────────────────────────────────────
+  # Solo se ejecuta en push a main (no en PRs) y si los jobs anteriores pasan
+  deploy:
+    name: Deploy a Render
+    needs: [build-frontend, validate-backend]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Deploy backend
+        run: |
+          curl -f -sS -X POST "${{ secrets.RENDER_BACKEND_DEPLOY_HOOK }}"
+          echo "✓ Backend deploy disparado"
+
+      - name: Deploy frontend
+        run: |
+          curl -f -sS -X POST "${{ secrets.RENDER_FRONTEND_DEPLOY_HOOK }}"
+          echo "✓ Frontend deploy disparado"

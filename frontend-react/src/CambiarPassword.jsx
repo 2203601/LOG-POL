@@ -36,7 +36,7 @@ export default function CambiarPassword() {
     setError('')
     setLoading(true)
     try {
-      const res = await apiFetch(`http://localhost:3001/api/usuarios/${usuario.id}/cambiar-password`, {
+      const res = await apiFetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3001'}/api/usuarios/${usuario.id}/cambiar-password`, {
         method: 'POST',
         body: JSON.stringify({ nuevaPassword: nueva }),
       })

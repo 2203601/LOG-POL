@@ -1,10 +1,10 @@
 import { useState, useEffect } from 'react'
 import Nav from './Nav'
-import { apiFetch } from './api'
+import { apiFetch, BASE_URL } from './api'
 import './Pedidos.css'
 
-const API  = 'http://localhost:3001/api/pedidos'
-const VAPI = 'http://localhost:3001/api/vehiculos'
+const API  = `${BASE_URL}/api/pedidos`
+const VAPI = `${BASE_URL}/api/vehiculos`
 
 function formatFecha(iso) {
   if (!iso) return '—'

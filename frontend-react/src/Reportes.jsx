@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react'
 import Nav from './Nav'
-import { apiFetch } from './api'
+import { apiFetch, BASE_URL } from './api'
 import './Reportes.css'
 
-const API = 'http://localhost:3001/api/reportes'
+const API = `${BASE_URL}/api/reportes`
 
 const TIPOS = [
   {

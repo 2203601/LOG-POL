@@ -1,0 +1,38 @@
+services:
+
+  # ── BACKEND ─────────────────────────────────────────────────────────────────
+  - type: web
+    name: logpol-api
+    runtime: node
+    rootDir: backend
+    buildCommand: corepack enable && pnpm install --frozen-lockfile
+    startCommand: node server.js
+    plan: free
+    healthCheckPath: /api/login
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: MONGO_URI
+        sync: false          # ← pegar URI de MongoDB Atlas en el dashboard
+      - key: JWT_SECRET
+        generateValue: true  # ← Render genera uno seguro automáticamente
+      - key: CORS_ORIGIN
+        sync: false          # ← pegar la URL del frontend (ej: https://logpol-app.onrender.com)
+      - key: PORT
+        value: 10000         # Render usa el puerto 10000 por defecto
+
+  # ── FRONTEND ────────────────────────────────────────────────────────────────
+  - type: web
+    name: logpol-app
+    runtime: static
+    rootDir: frontend-react
+    buildCommand: corepack enable && pnpm install --frozen-lockfile && pnpm build
+    staticPublishPath: dist
+    plan: free
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html   # SPA: todas las rutas van a index.html
+    envVars:
+      - key: VITE_API_URL
+        sync: false                # ← pegar la URL del backend (ej: https://logpol-api.onrender.com)

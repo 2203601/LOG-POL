@@ -1,9 +1,9 @@
 import { useState, useEffect, useCallback } from 'react'
 import Nav from './Nav'
-import { apiFetch } from './api'
+import { apiFetch, BASE_URL } from './api'
 import './Seguimiento.css'
 
-const API  = 'http://localhost:3001/api/seguimiento'
+const API  = `${BASE_URL}/api/seguimiento`
 
 function formatFecha(iso) {
   if (!iso) return '—'

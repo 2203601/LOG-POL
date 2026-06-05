@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react'
 import Nav from './Nav'
-import { apiFetch } from './api'
+import { apiFetch, BASE_URL } from './api'
 import './Vehiculos.css'
 
-const API = 'http://localhost:3001/api/vehiculos'
+const API = `${BASE_URL}/api/vehiculos`
 
 function formatFecha(iso) {
   if (!iso) return '—'
@@ -22,7 +22,7 @@ function estadoPill(estado) {
   return <span className="pill p-serv"><span className="pdot" />{estado || 'Sin estado'}</span>
 }
 
-const UAPI = 'http://localhost:3001/api/usuarios'
+const UAPI = `${BASE_URL}/api/usuarios`
 
 const EMPTY_NUEVO  = { patente: '', anio: '', marca: '', modelo: '', capacidad_kg: '', conductor_asignado: '', conductor_dni: '', estado: 'Disponible', conductor_sel: '' }
 const EMPTY_EDITAR = { _id: '', patente: '', anio: '', marca: '', modelo: '', capacidad_kg: '', conductor_asignado: '', conductor_dni: '', estado: 'Disponible', conductor_sel: '' }

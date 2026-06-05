@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react'
 import Nav from './Nav'
-import { apiFetch } from './api'
+import { apiFetch, BASE_URL } from './api'
 import './RRHH.css'
 
-const API = 'http://localhost:3001/api/usuarios'
+const API = `${BASE_URL}/api/usuarios`
 
 function initials(nombre, apellido) {
   return ((nombre?.[0] || '') + (apellido?.[0] || '')).toUpperCase()

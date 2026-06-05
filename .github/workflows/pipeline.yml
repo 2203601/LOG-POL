@@ -56,7 +56,7 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           cache: pnpm
           cache-dependency-path: backend/pnpm-lock.yaml
 
@@ -75,7 +75,7 @@ jobs:
   deploy:
     name: Deploy a Render
     needs: [build-frontend, validate-backend]
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    if: github.event_name == 'push' && github.ref == 'refs/heads/luhueda'
     runs-on: ubuntu-latest
 
     steps:

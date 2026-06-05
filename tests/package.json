@@ -1,0 +1,20 @@
+{
+  "name": "logpol-tests",
+  "version": "1.0.0",
+  "description": "Tests unitarios e integración — LOG-POL",
+  "scripts": {
+    "test":             "jest --runInBand --forceExit",
+    "test:unit":        "jest unit --runInBand --forceExit",
+    "test:integration": "jest integration --runInBand --forceExit"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": ["mongodb-memory-server"]
+  },
+  "devDependencies": {
+    "bcryptjs":             "^2.4.3",
+    "jest":                 "^29.7.0",
+    "jsonwebtoken":         "^9.0.2",
+    "mongodb-memory-server":"^10.1.2",
+    "supertest":            "^7.0.0"
+  }
+}

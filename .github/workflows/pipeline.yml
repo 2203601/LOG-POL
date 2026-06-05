@@ -7,9 +7,39 @@ on:
     branches: [main]
 
 jobs:
-  # ── BUILD FRONTEND ──────────────────────────────────────────────────────────
+  # ── 1. TESTS (primer paso — bloquea todo si fallan) ──────────────────────────
+  test-backend:
+    name: Tests backend
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: backend/pnpm-lock.yaml
+
+      - name: Instalar dependencias
+        run: pnpm install --frozen-lockfile
+
+      - name: Correr tests
+        run: pnpm test
+        env:
+          JWT_SECRET: ci-test-secret-2025
+
+  # ── 2. BUILD FRONTEND (solo si tests pasan) ──────────────────────────────────
   build-frontend:
     name: Build frontend (Vite)
+    needs: test-backend
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -39,9 +69,10 @@ jobs:
       - name: Verificar que dist/ fue generado
         run: test -d dist && echo "dist OK"
 
-  # ── VALIDAR BACKEND ─────────────────────────────────────────────────────────
+  # ── 2. VALIDAR BACKEND (solo si tests pasan) ─────────────────────────────────
   validate-backend:
     name: Validar backend (syntax + deps)
+    needs: test-backend
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -70,40 +101,10 @@ jobs:
           MONGO_URI: mongodb://localhost/ci
           CORS_ORIGIN: http://localhost:5173
 
-  # ── TESTS BACKEND ───────────────────────────────────────────────────────────
-  test-backend:
-    name: Tests backend
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: backend
-
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: pnpm/action-setup@v4
-        with:
-          version: 11
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: pnpm
-          cache-dependency-path: backend/pnpm-lock.yaml
-
-      - name: Instalar dependencias
-        run: pnpm install --frozen-lockfile
-
-      - name: Correr tests
-        run: pnpm test
-        env:
-          JWT_SECRET: ci-test-secret-2025
-
-  # ── DEPLOY A RENDER ─────────────────────────────────────────────────────────
-  # Solo se ejecuta si los 3 jobs anteriores pasan
+  # ── 3. DEPLOY (solo si build y validación pasan) ─────────────────────────────
   deploy:
     name: Deploy a Render
-    needs: [build-frontend, validate-backend, test-backend]
+    needs: [build-frontend, validate-backend]
     if: github.event_name == 'push' && github.ref == 'refs/heads/luhueda'
     runs-on: ubuntu-latest
 

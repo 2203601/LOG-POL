@@ -7,9 +7,6 @@
     "test:unit":        "jest unit --runInBand --forceExit",
     "test:integration": "jest integration --runInBand --forceExit"
   },
-  "pnpm": {
-    "onlyBuiltDependencies": ["mongodb-memory-server"]
-  },
   "devDependencies": {
     "bcryptjs":             "^2.4.3",
     "jest":                 "^29.7.0",

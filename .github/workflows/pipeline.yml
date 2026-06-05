@@ -7,9 +7,9 @@ on:
     branches: [main]
 
 jobs:
-  # ── 1. TESTS (primer paso — bloquea todo si fallan) ──────────────────────────
-  test-backend:
-    name: Tests backend
+  # ── 1a. TESTS UNITARIOS DE BACKEND (/backend/__tests__) ──────────────────────
+  test-unitarios-backend:
+    name: Tests unitarios (backend)
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -29,17 +29,65 @@ jobs:
           cache-dependency-path: backend/pnpm-lock.yaml
 
       - name: Instalar dependencias
-        run: pnpm install --frozen-lockfile
+        run: pnpm install --frozen-lockfile --ignore-scripts
 
-      - name: Correr tests
+      - name: Correr tests unitarios
         run: pnpm test
         env:
           JWT_SECRET: ci-test-secret-2025
 
-  # ── 2. BUILD FRONTEND (solo si tests pasan) ──────────────────────────────────
+  # ── 1b. TESTS COMPLETOS (unit + integración con MongoDB in-memory) ───────────
+  test-completos:
+    name: Tests completos (unit + integración)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: tests
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: |
+            tests/pnpm-lock.yaml
+            backend/pnpm-lock.yaml
+
+      - name: Instalar dependencias del backend
+        working-directory: backend
+        run: pnpm install --frozen-lockfile --ignore-scripts
+
+      - name: Instalar dependencias de tests
+        run: pnpm install --frozen-lockfile --ignore-scripts
+
+      # Cachea el binario de MongoDB que descarga mongodb-memory-server
+      - name: Cache MongoDB binary
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/mongodb-binaries
+          key: mongodb-binary-${{ runner.os }}-7.0
+
+      - name: Correr tests unitarios
+        run: pnpm test:unit
+        env:
+          JWT_SECRET: ci-test-secret-2025
+
+      - name: Correr tests de integración
+        run: pnpm test:integration
+        env:
+          JWT_SECRET: ci-test-secret-2025
+          MONGOMS_PREFER_GLOBAL_PATH: 1
+
+  # ── 2a. BUILD FRONTEND (solo si ambos jobs de tests pasan) ───────────────────
   build-frontend:
     name: Build frontend (Vite)
-    needs: test-backend
+    needs: [test-unitarios-backend, test-completos]
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -59,7 +107,7 @@ jobs:
           cache-dependency-path: frontend-react/pnpm-lock.yaml
 
       - name: Instalar dependencias
-        run: pnpm install --frozen-lockfile
+        run: pnpm install --frozen-lockfile --ignore-scripts
 
       - name: Build
         run: pnpm build
@@ -69,10 +117,10 @@ jobs:
       - name: Verificar que dist/ fue generado
         run: test -d dist && echo "dist OK"
 
-  # ── 2. VALIDAR BACKEND (solo si tests pasan) ─────────────────────────────────
+  # ── 2b. VALIDAR BACKEND (solo si ambos jobs de tests pasan) ──────────────────
   validate-backend:
-    name: Validar backend (syntax + deps)
-    needs: test-backend
+    name: Validar backend (syntax + deps prod)
+    needs: [test-unitarios-backend, test-completos]
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -92,9 +140,9 @@ jobs:
           cache-dependency-path: backend/pnpm-lock.yaml
 
       - name: Instalar dependencias de producción
-        run: pnpm install --frozen-lockfile --prod
+        run: pnpm install --frozen-lockfile --prod --ignore-scripts
 
-      - name: Verificar que la app carga sin errores de sintaxis
+      - name: Verificar sintaxis
         run: node --check server.js && node --check app.js
         env:
           JWT_SECRET: ci-check-only
@@ -112,9 +160,9 @@ jobs:
       - name: Deploy backend
         run: |
           curl -f -sS -X POST "${{ secrets.RENDER_BACKEND_DEPLOY_HOOK }}"
-          echo "✓ Backend deploy disparado"
+          echo "Backend deploy disparado"
 
       - name: Deploy frontend
         run: |
           curl -f -sS -X POST "${{ secrets.RENDER_FRONTEND_DEPLOY_HOOK }}"
-          echo "✓ Frontend deploy disparado"
+          echo "Frontend deploy disparado"

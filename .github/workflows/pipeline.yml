@@ -70,11 +70,40 @@ jobs:
           MONGO_URI: mongodb://localhost/ci
           CORS_ORIGIN: http://localhost:5173
 
+  # ── TESTS BACKEND ───────────────────────────────────────────────────────────
+  test-backend:
+    name: Tests backend
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: backend/pnpm-lock.yaml
+
+      - name: Instalar dependencias
+        run: pnpm install --frozen-lockfile
+
+      - name: Correr tests
+        run: pnpm test
+        env:
+          JWT_SECRET: ci-test-secret-2025
+
   # ── DEPLOY A RENDER ─────────────────────────────────────────────────────────
-  # Solo se ejecuta en push a main (no en PRs) y si los jobs anteriores pasan
+  # Solo se ejecuta si los 3 jobs anteriores pasan
   deploy:
     name: Deploy a Render
-    needs: [build-frontend, validate-backend]
+    needs: [build-frontend, validate-backend, test-backend]
     if: github.event_name == 'push' && github.ref == 'refs/heads/luhueda'
     runs-on: ubuntu-latest
 

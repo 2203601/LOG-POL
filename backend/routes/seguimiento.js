@@ -50,11 +50,22 @@ router.get('/stats', async (req, res) => {
     const manana = new Date(hoy); manana.setDate(manana.getDate() + 1)
     const en24h  = new Date(Date.now() + 24 * 3_600_000)
 
+    let vehiculoFilter = {}
+    if (req.usuario.tipo_usuario === 'Chofer') {
+      const conductor = await Conductor.findOne({ usuario_id: req.usuario.id }).lean()
+      if (!conductor) return res.json({ en_ruta: 0, entregados_hoy: 0, retrasados: 0, urgentes: 0 })
+      const vehiculos = await Vehiculo.find({
+        conductor_asignado: { $regex: conductor.nombre, $options: 'i' }
+      }).select('_id').lean()
+      if (!vehiculos.length) return res.json({ en_ruta: 0, entregados_hoy: 0, retrasados: 0, urgentes: 0 })
+      vehiculoFilter = { vehiculo_id: { $in: vehiculos.map(v => v._id) } }
+    }
+
     const [en_ruta, entregados_hoy, retrasados, urgentes] = await Promise.all([
-      Pedido.countDocuments({ estado: 'En ruta' }),
-      Pedido.countDocuments({ estado: 'Entregado', updatedAt: { $gte: hoy, $lt: manana } }),
-      Pedido.countDocuments({ estado: 'En ruta', fecha_entrega_estimada: { $lt: new Date() } }),
-      Pedido.countDocuments({ estado: 'En ruta', fecha_entrega_estimada: { $gte: new Date(), $lt: en24h } })
+      Pedido.countDocuments({ estado: 'En ruta', ...vehiculoFilter }),
+      Pedido.countDocuments({ estado: 'Entregado', updatedAt: { $gte: hoy, $lt: manana }, ...vehiculoFilter }),
+      Pedido.countDocuments({ estado: 'En ruta', fecha_entrega_estimada: { $lt: new Date() }, ...vehiculoFilter }),
+      Pedido.countDocuments({ estado: 'En ruta', fecha_entrega_estimada: { $gte: new Date(), $lt: en24h }, ...vehiculoFilter })
     ])
     res.json({ en_ruta, entregados_hoy, retrasados, urgentes })
   } catch {

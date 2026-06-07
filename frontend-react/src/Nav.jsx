@@ -10,7 +10,6 @@ const LINKS = {
   ],
   'Recursos Humanos': [
     { to: '/rrhh',         label: 'Usuarios' },
-    { to: '/seguimiento',  label: 'Seguimiento' },
     { to: '/reportes',     label: 'Reportes' },
   ],
   'Chofer': [

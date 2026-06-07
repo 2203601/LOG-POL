@@ -107,7 +107,6 @@ export default function Login() {
           </form>
 
           <div className="divider" />
-          <div className="footer-note">Administración de Proyectos de Software · UCC · Abr 2026</div>
         </div>
       </div>
 

@@ -176,7 +176,7 @@ export default function RRHH() {
           <div className="page-hd">
             <div>
               <div className="page-ttl">Cuentas de usuario</div>
-              <div className="page-sub">Administración de accesos al sistema · Abril 2026</div>
+              <div className="page-sub">Administración de accesos al sistema</div>
             </div>
             <button className="btn-new" onClick={() => { setFormCrear(EMPTY_CREAR); setErrorCrear(''); setModalCrear(true) }}>
               <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
